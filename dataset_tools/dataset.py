@@ -3,7 +3,7 @@ from pathlib import Path
 from zipfile import ZipFile
 from tqdm import tqdm
 import requests
-
+from paths import WORKING_DIR, PARENT_WORKING_DIR, DATASET_DIR, ZIP_PATH
 
 """
 This file checks and if necessary downloads and extracts the dataset according
@@ -106,18 +106,14 @@ def check_dataset(dataset_path, zip_path):
 
 def main():
 
-    WORKING_DIR = os.getcwd()
-    PARENT_WORKING_DIR = Path(WORKING_DIR).parent
-    DATASET_DIR = os.path.join(PARENT_WORKING_DIR, 'dataset')
-    ZIP_PATH = os.path.join(DATASET_DIR,'historical_hourly_weather_data.zip')
-
     if not os.path.exists(DATASET_DIR):
         os.makedirs(DATASET_DIR)
     
     check_dataset(dataset_path=DATASET_DIR, zip_path=ZIP_PATH)
 
 
-
+if __name__ == "__main__":
+    main()
 
 
 
