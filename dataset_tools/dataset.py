@@ -1,9 +1,9 @@
 import os
-from pathlib import Path
 from zipfile import ZipFile
 from tqdm import tqdm
 import requests
-from paths import WORKING_DIR, PARENT_WORKING_DIR, DATASET_DIR, ZIP_PATH
+from common.paths import WORKING_DIR, PARENT_WORKING_DIR, DATASET_DIR, ZIP_PATH
+
 
 """
 This file checks and if necessary downloads and extracts the dataset according

@@ -2,8 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from paths import PROCESSED_DATASET_DIR
-
+from common.paths import PROCESSED_DATASET_DIR
 
 """
 Creates a tensor from all datasets with name 'dataset_tensor.npy':
