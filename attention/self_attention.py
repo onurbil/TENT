@@ -18,10 +18,10 @@ def qkv_matrices(x):
     q = keras.layers.Dot(axes=(2,1))([x, wq])
 
     wk = tf.keras.backend.random_normal([2,2,3], mean=0.0, stddev=1.0)
-    k = keras.layers.Dot(axes=(2,1))([x, wq])
+    k = keras.layers.Dot(axes=(2,1))([x, wk])
 
     wv = tf.keras.backend.random_normal([2,2,3], mean=0.0, stddev=1.0)
-    v = keras.layers.Dot(axes=(2,1))([x, wq])
+    v = keras.layers.Dot(axes=(2,1))([x, wv])
     
     return q,k,v
 
