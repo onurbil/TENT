@@ -12,21 +12,21 @@ from common.paths import PROCESSED_DATASET_DIR
 Self attention implementation:
 """
 
-def qkv_matrices(x):
+def qkv_matrices(x,hp):
     """
-    Initialize weights and calculate query, key and value vectors:
+    Calculate query, key and value vectors:
+    hp: Hyperparameter
     """
-    wq = tf.random.normal([3,10], mean=0.0, stddev=1.0)
+    wq = tf.random.normal([x.shape[2],hp], mean=0.0, stddev=1.0)
     q = tf.matmul(x,wq)
 
-    wk = tf.random.normal([3,10], mean=0.0, stddev=1.0)
+    wk = tf.random.normal([x.shape[2],hp], mean=0.0, stddev=1.0)
     k = tf.matmul(x,wk)
 
-    wv = tf.random.normal([3,10], mean=0.0, stddev=1.0)
+    wv = tf.random.normal([x.shape[2],hp], mean=0.0, stddev=1.0)
     v = tf.matmul(x,wv)
     
     return q,k,v
-
 
 def self_attention(q,k,v,mask=None):
     """
@@ -63,7 +63,7 @@ file_path = os.path.join(PROCESSED_DATASET_DIR, filename)
 dataset = np.load(file_path, allow_pickle=True)
 # Or use a random array for test:
 x = tf.keras.backend.constant(np.arange(60).reshape(5,4,3))
-q,k,v = qkv_matrices(x)
+q,k,v = qkv_matrices(x, hp=10)
 
 output = self_attention(q,k,v)
 print(output)
