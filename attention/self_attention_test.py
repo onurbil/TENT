@@ -15,25 +15,29 @@ m = 3  # measurements
 d = 2  # internal dimension
 
 x = tf.ones([t, c, m], dtype=tf.float32)
-print(f'x: {x.shape}')
+# print(f'x: {x.shape}')
 
 wq = tf.ones([m, d], dtype=tf.float32)
 wk = tf.ones([m, d], dtype=tf.float32)
 wv = tf.ones([m, d], dtype=tf.float32)
-print(f'wq: {wq.shape}')
-print(f'wk: {wk.shape}')
-print(f'wv: {wv.shape}')
+# print(f'wq: {wq.shape}')
+# print(f'wk: {wk.shape}')
+# print(f'wv: {wv.shape}')
 
 q = tf.matmul(x, wq)
 k = tf.matmul(x, wk)
 v = tf.matmul(x, wv)
-print(f'q: {q.shape}')
-print(f'k: {k.shape}')
-print(f'v: {v.shape}')
+# print(f'q: {q.shape}')
+# print(f'k: {k.shape}')
+# print(f'v: {v.shape}')
 
+from debugging_tools import *
+print(q)
 kt = tf.transpose(k, perm=[0, 2, 1])
 # kt = tf.expand_dims(kt, axis=0)
 kt = tf.broadcast_to(kt, [kt.shape[0], kt.shape[0], kt.shape[1], kt.shape[2]])
+print(kt)
+pause()
 print(f'kt: {kt.shape}')
 
 qe = tf.broadcast_to(q, [q.shape[0], q.shape[0], q.shape[1], q.shape[2]])
