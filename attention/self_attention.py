@@ -5,7 +5,7 @@ import tensorflow as tf
 import tensorflow.keras.backend
 import keras.layers
 from common.paths import PROCESSED_DATASET_DIR
-
+from debugging_tools import *
 
 
 """
@@ -42,19 +42,22 @@ def self_attention(q,k,v,mask=None):
     if mask is not None:
         z += (mask * -1e9) 
     # !!! Test reduce_sum vs reduce_mean
-    z = tf.reduce_sum(z, axis=[-1, -2])    
+    z = tf.reduce_sum(z, axis=[-1, -2])  
     se = tf.nn.softmax(z, axis=-1) 
-    ve = tf.broadcast_to(v, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])
-    
     se = tf.expand_dims(se, -1)
     se = tf.expand_dims(se, -1)
-    se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])
-    z = tf.multiply(se, ve)
-    # !!! reduce_sum vs reduce_mean: Reduce mean --> smaller variance --> Distinction harder.
-    # Here reduce_sum seems better.
-    z_sum = tf.reduce_sum(z, axis=1)    
+     
+    # Option 1 (Comment option 1 or option 2): 
+    # ve = tf.broadcast_to(v, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])    
+    # se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])
+    # z = tf.multiply(se, ve)
     
-    return z_sum
+    # Option 2:     
+    se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[1]])
+    z = tf.matmul(se,v)
+    z = tf.reduce_sum(z, axis=1)
+        
+    return z
 
 
 # Load dataset:
