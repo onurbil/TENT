@@ -60,13 +60,33 @@ def self_attention(q,k,v,mask=None):
     return z
 
 
+def multihead_self_attention(x,hp,loop):
+    """
+    Run self_attention() 'loop' different times and concatenate to axis=2.
+    Initialize wo matrix. 
+    Later this function will be embedded to self_attention as 4th dimension
+    for a better runtime.
+    x: input
+    hp: hyperparameter
+    loop: repeating number. 
+    """
+    z_all = tf.zeros([x.shape[0],x.shape[1],0])
+    for i in range(loop):
+        
+        q,k,v = qkv_matrices(x, hp)
+        z = self_attention(q,k,v)
+        z_all = tf.concat([z_all, z], axis=2)
+    
+    wo = tf.random.normal([z_all.shape[0],z_all.shape[2],x.shape[2]], mean=0.0, stddev=1.0)
+    z = tf.matmul(z_all,wo)
+    return z
+
+
+
 # Load dataset:
 filename = 'dataset_tensor.npy'  
 file_path = os.path.join(PROCESSED_DATASET_DIR, filename)
 dataset = np.load(file_path, allow_pickle=True)
 # Or use a random array for test:
 x = tf.keras.backend.constant(np.arange(60).reshape(5,4,3))
-q,k,v = qkv_matrices(x, hp=10)
-
-output = self_attention(q,k,v)
-print(output)
+z = multihead_self_attention(x, hp=10, loop=8)
