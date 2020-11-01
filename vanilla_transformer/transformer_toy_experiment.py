@@ -74,14 +74,17 @@ train_y = np.array(
 
 EPOCHS = 2000
 num_layers = 6
-d_model = train_x.shape[-1]
+d_model = 5
 dff = 64
-num_heads = 10
-input_size = train_x.shape[-2]
+num_heads = 5
+input_size = train_x.shape[-1]
+input_length = train_x.shape[-2]
 output_size = train_y.shape[-1]
 dropout_rate = 0.1
 
-transformer = vt.Transformer(num_layers, d_model, num_heads, dff, input_size, output_size, rate=dropout_rate)
+transformer = vt.Transformer(input_size, num_layers, d_model, num_heads, dff, input_length, output_size,
+                             rate=dropout_rate)
+
 learning_rate = vt.CustomSchedule(d_model)
 optimizer = kr.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 # train_loss = kr.metrics.Mean(name='train_loss')

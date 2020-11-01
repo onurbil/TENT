@@ -77,7 +77,7 @@ def scaled_dot_product_attention(q, k, v, mask):
 
 
 class MultiHeadAttention(tf.keras.layers.Layer):
-    def __init__(self, d_model, num_heads):
+    def __init__(self, input_size, d_model, num_heads):
         super(MultiHeadAttention, self).__init__()
         self.num_heads = num_heads
         self.d_model = d_model
@@ -90,7 +90,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.wk = tf.keras.layers.Dense(d_model)
         self.wv = tf.keras.layers.Dense(d_model)
 
-        self.dense = tf.keras.layers.Dense(d_model)
+        self.dense = tf.keras.layers.Dense(input_size)
 
     def split_heads(self, x, batch_size):
         """Split the last dimension into (num_heads, depth).
@@ -134,11 +134,11 @@ def point_wise_feed_forward_network(d_model, dff):
 
 
 class EncoderLayer(tf.keras.layers.Layer):
-    def __init__(self, d_model, num_heads, dff, rate=0.1):
+    def __init__(self, input_size, d_model, num_heads, dff, rate=0.1):
         super(EncoderLayer, self).__init__()
 
-        self.mha = MultiHeadAttention(d_model, num_heads)
-        self.ffn = point_wise_feed_forward_network(d_model, dff)
+        self.mha = MultiHeadAttention(input_size, d_model, num_heads)
+        self.ffn = point_wise_feed_forward_network(input_size, dff)
 
         self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
@@ -195,17 +195,17 @@ class DecoderLayer(tf.keras.layers.Layer):
 
 
 class Encoder(tf.keras.layers.Layer):
-    def __init__(self, num_layers, d_model, num_heads, dff,
+    def __init__(self, num_layers, input_size, d_model, num_heads, dff,
                  maximum_position_encoding, rate=0.1):
         super(Encoder, self).__init__()
 
+        self.input_size = input_size
         self.d_model = d_model
         self.num_layers = num_layers
 
-        self.pos_encoding = positional_encoding(maximum_position_encoding,
-                                                self.d_model)
+        self.pos_encoding = positional_encoding(maximum_position_encoding, input_size)
 
-        self.enc_layers = [EncoderLayer(d_model, num_heads, dff, rate)
+        self.enc_layers = [EncoderLayer(input_size, d_model, num_heads, dff, rate)
                            for _ in range(num_layers)]
 
         self.dropout = tf.keras.layers.Dropout(rate)
@@ -262,12 +262,12 @@ class Decoder(tf.keras.layers.Layer):
 
 
 class Transformer(tf.keras.Model):
-    def __init__(self, num_layers, d_model, num_heads, dff,
-                 input_size, output_size, rate=0.1):
+    def __init__(self, input_size, num_layers, d_model, num_heads, dff,
+                 input_length, output_size, rate=0.1):
         super(Transformer, self).__init__()
 
-        self.encoder = Encoder(num_layers, d_model, num_heads, dff,
-                               input_size, rate)
+        self.encoder = Encoder(num_layers, input_size, d_model, num_heads, dff,
+                               input_length, rate)
 
         self.flatten_layer = tf.keras.layers.Flatten()
         self.final_layer = tf.keras.layers.Dense(output_size, activation='sigmoid')
@@ -293,7 +293,7 @@ class Transformer(tf.keras.Model):
             tf.TensorSpec(shape=train_y.shape[1:], dtype=tf.float32),
         ]
 
-        @tf.function(input_signature=train_step_signature)
+        # @tf.function(input_signature=train_step_signature)
         def train_step(inp, tar):
             with tf.GradientTape() as tape:
                 predictions, _ = self(inp, True)
