@@ -5,7 +5,7 @@ import tensorflow as tf
 import tensorflow.keras.backend
 import keras.layers
 from common.paths import PROCESSED_DATASET_DIR
-
+from debugging_tools import *
 
 
 """
@@ -42,19 +42,45 @@ def self_attention(q,k,v,mask=None):
     if mask is not None:
         z += (mask * -1e9) 
     # !!! Test reduce_sum vs reduce_mean
-    z = tf.reduce_sum(z, axis=[-1, -2])    
+    z = tf.reduce_sum(z, axis=[-1, -2])  
     se = tf.nn.softmax(z, axis=-1) 
-    ve = tf.broadcast_to(v, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])
-    
     se = tf.expand_dims(se, -1)
     se = tf.expand_dims(se, -1)
-    se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])
-    z = tf.multiply(se, ve)
-    # !!! reduce_sum vs reduce_mean: Reduce mean --> smaller variance --> Distinction harder.
-    # Here reduce_sum seems better.
-    z_sum = tf.reduce_sum(z, axis=1)    
+     
+    # Option 1 (Comment option 1 or option 2): 
+    # ve = tf.broadcast_to(v, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])    
+    # se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])
+    # z = tf.multiply(se, ve)
     
-    return z_sum
+    # Option 2:     
+    se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[1]])
+    z = tf.matmul(se,v)
+    z = tf.reduce_sum(z, axis=1)
+        
+    return z
+
+
+def multihead_self_attention(x,hp,loop):
+    """
+    Run self_attention() 'loop' different times and concatenate to axis=2.
+    Initialize wo matrix. 
+    Later this function will be embedded to self_attention as 4th dimension
+    for a better runtime.
+    x: input
+    hp: hyperparameter
+    loop: repeating number. 
+    """
+    z_all = tf.zeros([x.shape[0],x.shape[1],0])
+    for i in range(loop):
+        
+        q,k,v = qkv_matrices(x, hp)
+        z = self_attention(q,k,v)
+        z_all = tf.concat([z_all, z], axis=2)
+    
+    wo = tf.random.normal([z_all.shape[0],z_all.shape[2],x.shape[2]], mean=0.0, stddev=1.0)
+    z = tf.matmul(z_all,wo)
+    return z
+
 
 
 # Load dataset:
@@ -63,7 +89,4 @@ file_path = os.path.join(PROCESSED_DATASET_DIR, filename)
 dataset = np.load(file_path, allow_pickle=True)
 # Or use a random array for test:
 x = tf.keras.backend.constant(np.arange(60).reshape(5,4,3))
-q,k,v = qkv_matrices(x, hp=10)
-
-output = self_attention(q,k,v)
-print(output)
+z = multihead_self_attention(x, hp=10, loop=8)
