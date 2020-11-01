@@ -51,10 +51,12 @@ def self_attention(q,k,v,mask=None):
     # ve = tf.broadcast_to(v, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])    
     # se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])
     # z = tf.multiply(se, ve)
-    
+    ##
     # Option 2:     
     se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[1]])
     z = tf.matmul(se,v)
+    ##
+    
     z = tf.reduce_sum(z, axis=1)
         
     return z
@@ -83,6 +85,25 @@ def multihead_self_attention(x,hp,loop):
 
 
 
+def encoder(x,z,units=512):
+
+    # Positional encoding missing! Input 3. dimension also 512 after
+    # encoding?
+    # 3. Dimension mismatch for residuals!
+    sum = tf.math.add(x, z)
+    norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)(sum)
+    model = tf.keras.Sequential([
+    tf.keras.layers.Dense(units,activation='relu')
+    ])        
+    dense = model(norm)
+    output = tf.keras.layers.LayerNormalization(epsilon=1e-6)(dense+norm)
+    
+    return output
+
+
+
+
+
 # Load dataset:
 filename = 'dataset_tensor.npy'  
 file_path = os.path.join(PROCESSED_DATASET_DIR, filename)
@@ -90,3 +111,4 @@ dataset = np.load(file_path, allow_pickle=True)
 # Or use a random array for test:
 x = tf.keras.backend.constant(np.arange(60).reshape(5,4,3))
 z = multihead_self_attention(x, hp=10, loop=8)
+# encoder(x,z)
