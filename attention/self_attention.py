@@ -85,19 +85,23 @@ def multihead_self_attention(x,hp,loop):
 
 
 
-def encoder(x,z,units=512):
+def encoder(x,z,units=64):
 
+    d_model = z.shape[-1]
     # Positional encoding missing! Input 3. dimension also 512 after
     # encoding?
     # 3. Dimension mismatch for residuals!
     sum = tf.math.add(x, z)
     norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)(sum)
     model = tf.keras.Sequential([
-    tf.keras.layers.Dense(units,activation='relu')
+    tf.keras.layers.Dense(units,activation='relu'),
+    tf.keras.layers.Dropout(0.1),
+    tf.keras.layers.Dense(d_model ,activation='relu'),
+    tf.keras.layers.Dropout(0.1),
     ])        
     dense = model(norm)
     output = tf.keras.layers.LayerNormalization(epsilon=1e-6)(dense+norm)
-    
+
     return output
 
 
@@ -111,4 +115,5 @@ dataset = np.load(file_path, allow_pickle=True)
 # Or use a random array for test:
 x = tf.keras.backend.constant(np.arange(60).reshape(5,4,3))
 z = multihead_self_attention(x, hp=10, loop=8)
-# encoder(x,z)
+out = encoder(x,z)
+print(out)
