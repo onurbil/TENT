@@ -72,6 +72,9 @@ train_y = np.array(
     ]]]
     , dtype=np.float32)
 
+print(train_x.shape)
+print(train_y.shape)
+
 EPOCHS = 2000
 num_layers = 6
 d_model = 5
