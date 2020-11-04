@@ -56,7 +56,23 @@ learning_rate = vt.CustomSchedule(d_model)
 optimizer = kr.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 # train_loss = kr.metrics.Mean(name='train_loss')
 
-transformer.fit(train_x, train_y, EPOCHS, optimizer, loss=kr.losses.MeanSquaredError())
+checkpoint_path = "./checkpoints/train"
+ckpt = tf.train.Checkpoint(transformer=transformer,
+                           optimizer=optimizer)
+ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
+
+# if a checkpoint exists, restore the latest checkpoint.
+# if ckpt_manager.latest_checkpoint:
+#   ckpt.restore(ckpt_manager.latest_checkpoint)
+#   print ('Latest checkpoint restored!!')
+
+transformer.fit(train_x,
+                train_y,
+                epochs=EPOCHS,
+                optimizer=optimizer,
+                loss=kr.losses.MeanSquaredError(),
+                metrics={'mse': kr.metrics.mse, 'mae': kr.metrics.mae},
+                callbacks=[ckpt_manager])
 
 pred = transformer(train_x[0], False)[0]
 print(np.round(pred.numpy(), 3))
