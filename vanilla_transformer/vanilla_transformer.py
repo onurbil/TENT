@@ -280,13 +280,23 @@ class Transformer(tf.keras.Model):
 
         return final_output, attention_weights
 
-    def fit(self, train_x, train_y, epochs, optimizer, loss):
+    def fit(self, train_x, train_y, epochs, optimizer, loss, metrics, callbacks):
 
         train_loss = kr.metrics.Mean(name='train_loss')
+        train_mse = kr.metrics.Mean(name='train_mse')
+        train_mae = kr.metrics.Mean(name='train_mae')
 
         def loss_function(real, pred):
             loss_ = loss(real, pred)
             return tf.reduce_sum(loss_)
+
+        def mse_function(real, pred):
+            mse = metrics['mse'](real, pred)
+            return mse
+
+        def mae_function(real, pred):
+            mae = metrics['mae'](real, pred)
+            return mae
 
         train_step_signature = [
             tf.TensorSpec(shape=train_x.shape[1:], dtype=tf.float32),
@@ -302,20 +312,31 @@ class Transformer(tf.keras.Model):
             gradients = tape.gradient(loss, self.trainable_variables)
             optimizer.apply_gradients(zip(gradients, self.trainable_variables))
             train_loss(loss)
+            train_mse(mse_function(tar, predictions))
+            train_mae(mae_function(tar, predictions))
 
+        ckpt_manager = callbacks[0]
         for epoch in range(epochs):
             start = time.time()
 
             train_loss.reset_states()
+            train_mse.reset_states()
+            train_mae.reset_states()
 
             # inp -> portuguese, tar -> english
             for (batch, (inp, tar)) in enumerate(zip(train_x, train_y)):
                 train_step(inp, tar)
 
                 if batch % 50 == 0:
-                    print(f'Epoch {epoch + 1} / {epochs} Batch {batch} Loss {train_loss.result():.4f}')
+                    print(f'Epoch {epoch + 1} / {epochs} Batch {batch} Loss {train_loss.result():.4f} '
+                          f'MSE {train_mse.result():.4f} MAE {train_mae.result():.4f}')
 
-            print(f'Epoch {epoch + 1} / {epochs} Loss {train_loss.result():.4f}')
+            if (epoch + 1) % 5 == 0:
+                ckpt_save_path = ckpt_manager.save()
+                print('Saving checkpoint for epoch {} at {}'.format(epoch + 1, ckpt_save_path))
+
+            print(f'Epoch {epoch + 1} / {epochs} Loss {train_loss.result():.4f} '
+                  f'MSE {train_mse.result():.4f} MAE {train_mae.result():.4f}')
 
             print(f'Time taken for 1 epoch: {time.time() - start} secs\n')
 
