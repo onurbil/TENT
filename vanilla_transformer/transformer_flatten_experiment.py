@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.keras as kr
 
-import vanilla_transformer as vt
+import vanilla_transformer.vanilla_transformer as vt
 
 
 def run_full_measurements_experiment(input_length, prediction_time,
@@ -13,7 +13,7 @@ def run_full_measurements_experiment(input_length, prediction_time,
                                      epochs, batch_size,
                                      dataset_path, test_size, valid_size, dataset_limit=None,
                                      save_checkpoints=True):
-    dataset = np.load(os.path.join(dataset_path), allow_pickle=True)
+    dataset = np.load(dataset_path, allow_pickle=True)
     dataset = np.reshape(dataset, (dataset.shape[0], dataset.shape[1] * dataset.shape[2]))
     if dataset_limit is not None:
         dataset = dataset[:dataset_limit, ...]
