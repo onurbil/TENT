@@ -5,14 +5,12 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.keras as kr
 
-import vanilla_transformer.vanilla_transformer as vt
+import vanilla_transformer.transformer as vt
 
 
-def run_full_measurements_experiment(input_length, prediction_time,
-                                     num_layers, d_model, dff, num_heads, dropout_rate,
-                                     epochs, batch_size,
-                                     dataset_path, test_size, valid_size, dataset_limit=None,
-                                     save_checkpoints=True):
+def prepare_dataset(input_length, prediction_time, batch_size,
+                    dataset_path, test_size, valid_size, dataset_limit=None):
+
     dataset = np.load(dataset_path, allow_pickle=True)
     dataset = np.reshape(dataset, (dataset.shape[0], dataset.shape[1] * dataset.shape[2]))
     if dataset_limit is not None:
@@ -50,9 +48,20 @@ def run_full_measurements_experiment(input_length, prediction_time,
     print(f'valid y: {valid_y.shape}')
     print(f'test x: {test_x.shape}')
     print(f'test y: {test_y.shape}')
+    return train_x, train_y, valid_x, valid_y, test_x, test_y
 
-    input_size = dataset.shape[-1]
-    output_size = dataset.shape[-1]
+
+def run_full_measurements_experiment(input_length, prediction_time,
+                                     num_layers, d_model, dff, num_heads, dropout_rate,
+                                     epochs, batch_size,
+                                     dataset_path, test_size, valid_size, dataset_limit=None,
+                                     save_checkpoints=True):
+
+    train_x, train_y, valid_x, valid_y, test_x, test_y = prepare_dataset(input_length, prediction_time, batch_size,
+                                                                         dataset_path, test_size, valid_size,
+                                                                         dataset_limit)
+    input_size = train_x.shape[-1]
+    output_size = train_x.shape[-1]
 
     transformer = vt.Transformer(input_size, num_layers, d_model, num_heads, dff, input_length, output_size,
                                  rate=dropout_rate)
@@ -83,17 +92,18 @@ def run_full_measurements_experiment(input_length, prediction_time,
                     callbacks=callbacks, ckpt_manager=ckpt_manager)
 
     pred = transformer(test_x[0], False)[0]
-    mse = kr.metrics.mse(test_y[0], pred)
-    mae = kr.metrics.mae(test_y[0], pred)
+    mse = np.mean(kr.metrics.mse(test_y[0], pred))
+    mae = np.mean(kr.metrics.mae(test_y[0], pred))
     print(f'mse: {mse}, mae: {mae}')
-    print(train_y[0][0] - pred.numpy()[0])
+
+    return transformer, (mse, mae)
 
 
 if __name__ == '__main__':
     run_full_measurements_experiment(input_length=10, prediction_time=1,
                                      num_layers=4, d_model=64, dff=64, num_heads=8, dropout_rate=.1,
                                      epochs=50, batch_size=32,
-                                     dataset_path='../../processed_dataset/dataset_tensor.npy',
+                                     dataset_path='../processed_dataset/dataset_tensor.npy',
                                      test_size=24 * 365, valid_size=24 * 365,
                                      save_checkpoints=False)
 
