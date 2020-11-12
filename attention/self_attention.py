@@ -129,7 +129,7 @@ def encoder(x,z,units=64):
 
 
 def split_train_test(dataset, tr_batch_count=284, te_batch_count=69,
-                     step_size=25, batch_size=128):
+                     batch_size=128):
     """
     Returns x_train, y_train, x_test, y_test. Flattens last dimesion.
     Test is last te_batch_count*batch_size rows of the dataset.
@@ -139,25 +139,39 @@ def split_train_test(dataset, tr_batch_count=284, te_batch_count=69,
     dataset: dataset with shape (x,y,z)
     tr_batch_count: Batch count for train data.
     te_batch_count: Batch count for test data.
-    batch_size: Size of each batch.
-    step_size: Each xth row is BOTH x and y -> Uses step_size-1 rows to predict
-    next row. Defaut: 25 (24h+1).      
+    batch_size: Size of each batch.     
     """
     dataset = dataset.reshape(dataset.shape[0],-1)
-    train_time = tr_batch_count*batch_size
-    test_time = te_batch_count*batch_size    
-    train = dataset[-(train_time+test_time):-test_time]
-    test = dataset[-test_time:]
+    train_range = tr_batch_count*batch_size
+    test_range = te_batch_count*batch_size    
+    train = dataset[-(train_range+test_range):-test_range]
+    test = dataset[-test_range:]
     
     return train, test
     
-    # x_train = train
-    # y_train = train[step_size-1::step_size]
-    # x_test = test
-    # y_test = test[step_size-1::step_size]
-    # 
-    # return x_train, y_train, x_test, y_test
     
+def make_recurrent(array, input_length=24):
+    """
+    Make make_recurrent arrays from given array:
+    x1, x2, x3, ..., xn
+    x2, x3, x4, ..., xn
+    x3, x4, x5, ..., xn
+    with n=input_length.
+    """
+    shape0 = array.shape[0]
+    shape1 = array.shape[1]
+    recurrent = np.zeros((shape0, input_length, shape1))
+    
+    for i in range(input_length):
+        rec = array[i:]
+        zeros_arr = np.zeros((shape0,shape1))
+        zeros_arr[:shape0-i,:] = rec
+        recurrent[:,i,:] = zeros_arr
+    # -1 because last array is needed for y:
+    recurrent = recurrent[:-(input_length-1),:,:]
+        
+    return recurrent
+
 
 # Load dataset:
 filename = 'dataset_tensor.npy'  
@@ -166,8 +180,15 @@ dataset = np.load(file_path, allow_pickle=True)
 
 train, test = split_train_test(dataset)
 
-debug(train)
-debug(test)
+input_length=24
+recurrent_tr = make_recurrent(train, input_length=input_length)
+x_train = recurrent_tr[:-1]
+y_train = recurrent_tr[1:,input_length-1,:]
+
+recurrent_te = make_recurrent(test, input_length=input_length)
+x_test = recurrent_te[:-1]
+y_test = recurrent_te[1:,input_length-1,:]
+
 
 
 # Or use a random array for test:
