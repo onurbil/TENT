@@ -108,11 +108,10 @@ def multihead_self_attention(x,hp,loop):
     return z
 
 
-
 def encoder(x,z,units=64):
 
     d_model = z.shape[-1]
-    # Positional encoding missing! Input 3. dimension also 512 after
+    # Input 3. dimension also 512 after
     # encoding?
     # 3. Dimension mismatch for residuals!
     sum = tf.math.add(x, z)
@@ -129,15 +128,50 @@ def encoder(x,z,units=64):
     return output
 
 
-
-
+def split_train_test(dataset, tr_batch_count=284, te_batch_count=69,
+                     step_size=25, batch_size=128):
+    """
+    Returns x_train, y_train, x_test, y_test. Flattens last dimesion.
+    Test is last te_batch_count*batch_size rows of the dataset.
+    Train is tr_batch_count*batch_size rows before test.
+    The first rows of the dataset is not used.
+    Inputs:
+    dataset: dataset with shape (x,y,z)
+    tr_batch_count: Batch count for train data.
+    te_batch_count: Batch count for test data.
+    batch_size: Size of each batch.
+    step_size: Each xth row is BOTH x and y -> Uses step_size-1 rows to predict
+    next row. Defaut: 25 (24h+1).      
+    """
+    dataset = dataset.reshape(dataset.shape[0],-1)
+    train_time = tr_batch_count*batch_size
+    test_time = te_batch_count*batch_size    
+    train = dataset[-(train_time+test_time):-test_time]
+    test = dataset[-test_time:]
+    
+    return train, test
+    
+    # x_train = train
+    # y_train = train[step_size-1::step_size]
+    # x_test = test
+    # y_test = test[step_size-1::step_size]
+    # 
+    # return x_train, y_train, x_test, y_test
+    
 
 # Load dataset:
 filename = 'dataset_tensor.npy'  
 file_path = os.path.join(PROCESSED_DATASET_DIR, filename)
 dataset = np.load(file_path, allow_pickle=True)
+
+train, test = split_train_test(dataset)
+
+debug(train)
+debug(test)
+
+
 # Or use a random array for test:
-x = tf.keras.backend.constant(np.arange(60).reshape(5,4,3))
-z = multihead_self_attention(x, hp=10, loop=8)
-out = encoder(x,z)
-print(out)
+# x = tf.keras.backend.constant(np.arange(60).reshape(5,4,3))
+# z = multihead_self_attention(x, hp=10, loop=8)
+# out = encoder(x,z)
+# print(out)
