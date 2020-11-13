@@ -1,6 +1,9 @@
 import numpy as np
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
+
+from numpy.core._multiarray_umath import broadcast
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
 import tensorflow.keras.backend
 import keras.layers
@@ -16,21 +19,33 @@ def get_angles(pos, i, d_model):
     angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
     return pos * angle_rates
 
-
-def positional_encoding(position, d_model):
+def positional_encoding(position, model_shape, broadcast=True):
     """
     Copied from tutorial. The dimension doesnt change the implementation of
     the positional encoding. Only the correct dimension (time dimension) must
     sent as "position" input to positional_encoding.
     d_model is hyperparameter.
     """
+
+    angle_dim = model_shape[0]
+    if not broadcast:
+        angle_dim *= model_shape[1]
+
     angle_rads = get_angles(np.arange(position)[:, np.newaxis],
-                            np.arange(d_model)[np.newaxis, :],
-                            d_model)
+                            np.arange(angle_dim)[np.newaxis, :],
+                            angle_dim)
     # apply sin to even indices in the array; 2i
     angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
     # apply cos to odd indices in the array; 2i+1
     angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
+
+    if broadcast:
+        angle_rads = np.broadcast_to(np.expand_dims(angle_rads, -1), angle_rads.shape + (model_shape[1],))
+    else:
+        new_shape = angle_rads.shape[:-1] + model_shape
+        debug(new_shape)
+        angle_rads = np.reshape(angle_rads, new_shape)
+
     pos_encoding = angle_rads[np.newaxis, ...]
 
     return tf.cast(pos_encoding, dtype=tf.float32)
@@ -174,7 +189,7 @@ def make_recurrent(array, input_length=24):
 
 
 # Load dataset:
-filename = 'dataset_tensor.npy'  
+filename = 'dataset_tensor.npy'
 file_path = os.path.join(PROCESSED_DATASET_DIR, filename)
 dataset = np.load(file_path, allow_pickle=True)
 
