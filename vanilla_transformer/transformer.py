@@ -280,7 +280,7 @@ class Transformer(tf.keras.Model):
 
         return final_output, attention_weights
 
-    def fit(self, train_x, train_y, epochs, optimizer, loss, metrics, callbacks, ckpt_manager=None):
+    def fit(self, train_x, train_y, epochs, optimizer, loss, metrics, callbacks):
 
         train_loss = kr.metrics.Mean(name='train_loss')
         train_mse = kr.metrics.Mean(name='train_mse')
@@ -330,9 +330,10 @@ class Transformer(tf.keras.Model):
                     print(f'Epoch {epoch + 1} / {epochs} Batch {batch} Loss {train_loss.result():.4f} '
                           f'MSE {train_mse.result():.4f} MAE {train_mae.result():.4f}')
 
-            if ckpt_manager is not None and (epoch + 1) % 5 == 0:
-                ckpt_save_path = ckpt_manager.save()
-                print('Saving checkpoint for epoch {} at {}'.format(epoch + 1, ckpt_save_path))
+            callbacks.save_checkpoint(epoch)
+
+            callbacks.store_data('MSE', train_mse.result(), epoch, 'train')
+            callbacks.store_data('MAE', train_mae.result(), epoch, 'train')
 
             print(f'Epoch {epoch + 1} / {epochs} Loss {train_loss.result():.4f} '
                   f'MSE {train_mse.result():.4f} MAE {train_mae.result():.4f}')
