@@ -123,21 +123,22 @@ def multihead_self_attention(x,hp,loop):
     return z
 
 
-def encoder(x,z,units=64):
-
-    d_model = z.shape[-1]
-    # Input 3. dimension also 512 after
-    # encoding?
-    # 3. Dimension mismatch for residuals!
+def encoder(x, d_model, head_num=1, units=64):
+        
+    # x = x.astype('float32')
+    z = multihead_self_attention(x,d_model,head_num)
     sum = tf.math.add(x, z)
     norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)(sum)
     model = tf.keras.Sequential([
+    tf.keras.layers.Flatten(),
     tf.keras.layers.Dense(units,activation='relu'),
-    tf.keras.layers.Dropout(0.1),
-    tf.keras.layers.Dense(d_model ,activation='relu'),
-    tf.keras.layers.Dropout(0.1),
+    # tf.keras.layers.Dropout(0.1),
+    tf.keras.layers.Dense(tf.multiply(z.shape[-1],z.shape[-2]) ,activation='relu'),
+    # tf.keras.layers.Dropout(0.1),
+    tf.keras.layers.Reshape(z.shape[-2:])
     ])        
     dense = model(norm)
+
     output = tf.keras.layers.LayerNormalization(epsilon=1e-6)(dense+norm)
 
     return output
@@ -205,6 +206,18 @@ x_test = recurrent_te[:-1]
 y_test = recurrent_te[1:,input_length-1,:]
 
 
+d_model = 2
+x_train = x_train.astype('float32')
+x_train = x_train[:64,:,:]
+test_encoder = encoder(x_train, d_model, head_num=1, units=64)
+debug(test_encoder)
+
+
+
+# Small Test:
+# aa = np.arange(144).reshape((12,4,3))
+# bb = multihead_self_attention(aa,2,1)
+# bb = encoder(aa, d_model, head_num=1, units=64)
 
 # Or use a random array for test:
 # x = tf.keras.backend.constant(np.arange(60).reshape(5,4,3))
