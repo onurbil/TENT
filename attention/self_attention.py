@@ -8,6 +8,7 @@ import tensorflow as tf
 import tensorflow.keras.backend
 import keras.layers
 from common.paths import PROCESSED_DATASET_DIR
+from dataset_tools.split import split_train_test, get_xy
 from debugging_tools import *
 
 
@@ -51,18 +52,18 @@ def positional_encoding(position, model_shape, broadcast=True):
     return tf.cast(pos_encoding, dtype=tf.float32)
 
 
-def qkv_matrices(x,hp):
+def qkv_matrices(x,d_model):
     """
     Calculate query, key and value vectors:
-    hp: Hyperparameter
+    d_model: Hyperparameter
     """
-    wq = tf.random.normal([x.shape[2],hp], mean=0.0, stddev=1.0)
+    wq = tf.random.normal([x.shape[2],d_model], mean=0.0, stddev=1.0)
     q = tf.matmul(x,wq)
 
-    wk = tf.random.normal([x.shape[2],hp], mean=0.0, stddev=1.0)
+    wk = tf.random.normal([x.shape[2],d_model], mean=0.0, stddev=1.0)
     k = tf.matmul(x,wk)
 
-    wv = tf.random.normal([x.shape[2],hp], mean=0.0, stddev=1.0)
+    wv = tf.random.normal([x.shape[2],d_model], mean=0.0, stddev=1.0)
     v = tf.matmul(x,wv)
     
     return q,k,v
@@ -75,7 +76,7 @@ def self_attention(q,k,v,mask=None):
     kt = tf.transpose(k, perm=[0, 2, 1])
     kt = tf.broadcast_to(kt, [kt.shape[0], kt.shape[0], kt.shape[1], kt.shape[2]])
     z = tf.matmul(qe,kt)
-    # !!! dk check how to calculate in tensors!!! over axis [-1] correct???
+
     dk = tf.cast(tf.shape(k)[-1], tf.float32)
     z = z / tf.math.sqrt(dk)
     if mask is not None:
@@ -101,20 +102,20 @@ def self_attention(q,k,v,mask=None):
     return z
 
 
-def multihead_self_attention(x,hp,loop):
+def multihead_self_attention(x,d_model,head_num):
     """
-    Run self_attention() 'loop' different times and concatenate to axis=2.
+    Run self_attention() 'head_num' different times and concatenate to axis=2.
     Initialize wo matrix. 
     Later this function will be embedded to self_attention as 4th dimension
     for a better runtime.
     x: input
-    hp: hyperparameter
-    loop: repeating number. 
+    d_model: hyperparameter
+    head_num: Number of heads.
     """
     z_all = tf.zeros([x.shape[0],x.shape[1],0])
-    for i in range(loop):
+    for i in range(head_num):
         
-        q,k,v = qkv_matrices(x, hp)
+        q,k,v = qkv_matrices(x, d_model)
         z = self_attention(q,k,v)
         z_all = tf.concat([z_all, z], axis=2)
     
@@ -144,68 +145,18 @@ def encoder(x, d_model, head_num=1, units=64):
     return output
 
 
-def split_train_test(dataset, tr_batch_count=284, te_batch_count=69,
-                     batch_size=128):
-    """
-    Returns x_train, y_train, x_test, y_test. Flattens last dimesion.
-    Test is last te_batch_count*batch_size rows of the dataset.
-    Train is tr_batch_count*batch_size rows before test.
-    The first rows of the dataset is not used.
-    Inputs:
-    dataset: dataset with shape (x,y,z)
-    tr_batch_count: Batch count for train data.
-    te_batch_count: Batch count for test data.
-    batch_size: Size of each batch.     
-    """
-    dataset = dataset.reshape(dataset.shape[0],-1)
-    train_range = tr_batch_count*batch_size
-    test_range = te_batch_count*batch_size    
-    train = dataset[-(train_range+test_range):-test_range]
-    test = dataset[-test_range:]
-    
-    return train, test
-    
-    
-def make_recurrent(array, input_length=24):
-    """
-    Make make_recurrent arrays from given array:
-    x1, x2, x3, ..., xn
-    x2, x3, x4, ..., xn
-    x3, x4, x5, ..., xn
-    with n=input_length.
-    """
-    shape0 = array.shape[0]
-    shape1 = array.shape[1]
-    recurrent = np.zeros((shape0, input_length, shape1))
-    
-    for i in range(input_length):
-        rec = array[i:]
-        zeros_arr = np.zeros((shape0,shape1))
-        zeros_arr[:shape0-i,:] = rec
-        recurrent[:,i,:] = zeros_arr
-    # -1 because last array is needed for y:
-    recurrent = recurrent[:-(input_length-1),:,:]
-        
-    return recurrent
-
-
 # Load dataset:
 filename = 'dataset_tensor.npy'
 file_path = os.path.join(PROCESSED_DATASET_DIR, filename)
 dataset = np.load(file_path, allow_pickle=True)
 
-train, test = split_train_test(dataset)
-
+# Get x_train, y_train, x_test, y_test:
 input_length=24
-recurrent_tr = make_recurrent(train, input_length=input_length)
-x_train = recurrent_tr[:-1]
-y_train = recurrent_tr[1:,input_length-1,:]
+train, test = split_train_test(dataset)
+x_train, y_train = get_xy(train, input_length=input_length)
+x_test, y_test = get_xy(test, input_length=input_length)
 
-recurrent_te = make_recurrent(test, input_length=input_length)
-x_test = recurrent_te[:-1]
-y_test = recurrent_te[1:,input_length-1,:]
-
-
+# Run transformer:
 d_model = 2
 x_train = x_train.astype('float32')
 x_train = x_train[:64,:,:]
@@ -214,13 +165,7 @@ debug(test_encoder)
 
 
 
-# Small Test:
+# Test:
 # aa = np.arange(144).reshape((12,4,3))
-# bb = multihead_self_attention(aa,2,1)
+# aa = aa.astype('float32')
 # bb = encoder(aa, d_model, head_num=1, units=64)
-
-# Or use a random array for test:
-# x = tf.keras.backend.constant(np.arange(60).reshape(5,4,3))
-# z = multihead_self_attention(x, hp=10, loop=8)
-# out = encoder(x,z)
-# print(out)
