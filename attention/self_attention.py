@@ -9,6 +9,7 @@ import tensorflow.keras.backend
 import keras.layers
 from common.paths import PROCESSED_DATASET_DIR
 from dataset_tools.split import split_train_test, get_xy
+from visualization_tools.visualization import visualize_pos_encoding
 from debugging_tools import *
 
 
@@ -44,7 +45,6 @@ def positional_encoding(position, model_shape, broadcast=True):
         angle_rads = np.broadcast_to(np.expand_dims(angle_rads, -1), angle_rads.shape + (model_shape[1],))
     else:
         new_shape = angle_rads.shape[:-1] + model_shape
-        debug(new_shape)
         angle_rads = np.reshape(angle_rads, new_shape)
 
     pos_encoding = angle_rads[np.newaxis, ...]
@@ -161,11 +161,16 @@ d_model = 2
 x_train = x_train.astype('float32')
 x_train = x_train[:64,:,:]
 test_encoder = encoder(x_train, d_model, head_num=1, units=64)
-debug(test_encoder)
 
 
 
-# Test:
+# Visualization Test:
+# bb = positional_encoding(x_train.shape[0],x_train.shape, broadcast=True)
+# bb = bb.numpy()
+# bb = bb.reshape((bb.shape[3], bb.shape[1], bb.shape[2]))
+# visualize_pos_encoding(bb[0])
+
+# Encoder Test:
 # aa = np.arange(144).reshape((12,4,3))
 # aa = aa.astype('float32')
 # bb = encoder(aa, d_model, head_num=1, units=64)
