@@ -2,6 +2,10 @@ import tensorflow as tf
 import datetime
 from tensorflow.keras.callbacks import TensorBoard
 
+# To call tensorboard:
+#tensorboard --logdir=/notebooks/tensorized_transformers/vanilla_transformer/tb_logs --bind_all
+#change logdir to the dir that is needed, it will give a websit to folow, usually with port 6006.
+
 class callbacks():
     def __init__(self, transformer, optimizer, tensorBoard_path,save_checkpoints):
         self.tensorBoard_path = tensorBoard_path + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
