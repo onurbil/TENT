@@ -7,9 +7,12 @@ def visualize_pos_encoding(array):
     """
     Plot heatmap of positional encoding. 
     """
-    fig, ax = plt.subplots()
-    plt.imshow(array)
-    cbar = plt.colorbar()
+    plt.pcolormesh(array, cmap='viridis')
+    plt.xlabel('Embedding Dimensions')
+    plt.xlim((0, array.shape[1]))
+    plt.ylabel('Token Position')
+    plt.ylim((array.shape[0],0))
+    plt.colorbar()
     plt.show()
 
 

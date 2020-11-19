@@ -171,10 +171,11 @@ stacked_encoders = stack_encoders(6, x_train, d_model, head_num=1, units=64)
 
 
 # Visualization Test:
-# bb = positional_encoding(x_train.shape[0],x_train.shape, broadcast=True)
-# bb = bb.numpy()
-# bb = bb.reshape((bb.shape[3], bb.shape[1], bb.shape[2]))
-# visualize_pos_encoding(bb[0])
+test = np.zeros((64,24,216))
+bb = positional_encoding(test.shape[0],test.shape, broadcast=True)
+bb = bb.numpy()
+bb = bb[0].reshape((bb.shape[3],-1))
+visualize_pos_encoding(bb)
 
 # Encoder Test:
 # aa = np.arange(144).reshape((12,4,3))
