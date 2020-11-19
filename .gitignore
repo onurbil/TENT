@@ -107,3 +107,4 @@ venv.bak/
 .idea
 
 /vanilla_transformer/checkpoints
+/vanilla_transformer/tb_logs
