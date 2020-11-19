@@ -144,6 +144,12 @@ def encoder(x, d_model, head_num=1, units=64):
 
     return output
 
+def stack_encoders(num_encoders, x, d_model, head_num, units):
+    r = x
+    for e in range(num_encoders):
+        r = encoder(r, d_model, head_num, units)
+    return r
+
 
 # Load dataset:
 filename = 'dataset_tensor.npy'
@@ -160,8 +166,8 @@ x_test, y_test = get_xy(test, input_length=input_length)
 d_model = 2
 x_train = x_train.astype('float32')
 x_train = x_train[:64,:,:]
-test_encoder = encoder(x_train, d_model, head_num=1, units=64)
-
+# test_encoder = encoder(x_train, d_model, head_num=1, units=64)
+stacked_encoders = stack_encoders(6, x_train, d_model, head_num=1, units=64)
 
 
 # Visualization Test:
