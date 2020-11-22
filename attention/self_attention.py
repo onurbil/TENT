@@ -6,7 +6,7 @@ from numpy.core._multiarray_umath import broadcast
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
 import tensorflow.keras.backend
-import keras.layers
+# import keras.layers
 from common.paths import PROCESSED_DATASET_DIR
 from dataset_tools.split import split_train_test, get_xy
 from visualization_tools.visualization import visualize_pos_encoding
@@ -151,6 +151,18 @@ def stack_encoders(num_encoders, x, d_model, head_num, units):
     return r
 
 
+
+def final_layer(input, output_shape, activation):
+    output_size = tf.reduce_prod(output_shape)
+    flatten_layer = tf.keras.layers.Flatten()
+    dense_layer = tf.keras.layers.Dense(output_size, activation=activation)
+    reshape_layer = tf.keras.layers.Reshape(output_shape)
+    x = flatten_layer(input)
+    x = dense_layer(x)
+    x = reshape_layer(x)
+    return x
+
+
 # Load dataset:
 filename = 'dataset_tensor.npy'
 file_path = os.path.join(PROCESSED_DATASET_DIR, filename)
@@ -168,7 +180,7 @@ x_train = x_train.astype('float32')
 x_train = x_train[:64,:,:]
 # test_encoder = encoder(x_train, d_model, head_num=1, units=64)
 stacked_encoders = stack_encoders(6, x_train, d_model, head_num=1, units=64)
-
+pred = final_layer(input=stacked_encoders, output_shape=y_train.shape[1:], activation='sigmoid')
 
 # Visualization Test:
 test = np.zeros((64,24,216))
