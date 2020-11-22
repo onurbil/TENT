@@ -52,18 +52,25 @@ def positional_encoding(position, model_shape, broadcast=True):
     return tf.cast(pos_encoding, dtype=tf.float32)
 
 
-def qkv_matrices(x,d_model):
+def create_w_qkv(x_shape, d_model):
+    wq = tf.random.normal([x_shape[-1], d_model], mean=0.0, stddev=1.0)
+    wk = tf.random.normal([x_shape[-1], d_model], mean=0.0, stddev=1.0)
+    wv = tf.random.normal([x_shape[-1], d_model], mean=0.0, stddev=1.0)
+    return wq, wk, wv
+
+def qkv_matrices(x, w_qkv):
     """
     Calculate query, key and value vectors:
     d_model: Hyperparameter
     """
-    wq = tf.random.normal([x.shape[2],d_model], mean=0.0, stddev=1.0)
+    wq, wk, wv = w_qkv
+    # wq = tf.random.normal([x.shape[2],d_model], mean=0.0, stddev=1.0)
     q = tf.matmul(x,wq)
 
-    wk = tf.random.normal([x.shape[2],d_model], mean=0.0, stddev=1.0)
+    # wk = tf.random.normal([x.shape[2],d_model], mean=0.0, stddev=1.0)
     k = tf.matmul(x,wk)
 
-    wv = tf.random.normal([x.shape[2],d_model], mean=0.0, stddev=1.0)
+    # wv = tf.random.normal([x.shape[2],d_model], mean=0.0, stddev=1.0)
     v = tf.matmul(x,wv)
     
     return q,k,v
@@ -102,7 +109,7 @@ def self_attention(q,k,v,mask=None):
     return z
 
 
-def multihead_self_attention(x,d_model,head_num):
+def multihead_self_attention(x,d_model,head_num, w_qkvs, wo):
     """
     Run self_attention() 'head_num' different times and concatenate to axis=2.
     Initialize wo matrix. 
@@ -115,7 +122,7 @@ def multihead_self_attention(x,d_model,head_num):
     z_all = tf.zeros([x.shape[0],x.shape[1],0])
     for i in range(head_num):
         
-        q,k,v = qkv_matrices(x, d_model)
+        q,k,v = qkv_matrices(x, w_qkvs[i])
         z = self_attention(q,k,v)
         z_all = tf.concat([z_all, z], axis=2)
     
@@ -124,12 +131,13 @@ def multihead_self_attention(x,d_model,head_num):
     return z
 
 
-def encoder(x, d_model, head_num=1, units=64):
-        
+def encoder(x, d_model, w_qkvs, wo, dense_weights, head_num=1, units=64):
     # x = x.astype('float32')
-    z = multihead_self_attention(x,d_model,head_num)
+    z = multihead_self_attention(x,d_model,head_num, w_qkvs, wo)
     sum = tf.math.add(x, z)
     norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)(sum)
+
+    # TODO: inject dense_weights into the model
     model = tf.keras.Sequential([
     tf.keras.layers.Flatten(),
     tf.keras.layers.Dense(units,activation='relu'),
@@ -144,18 +152,19 @@ def encoder(x, d_model, head_num=1, units=64):
 
     return output
 
-def stack_encoders(num_encoders, x, d_model, head_num, units):
+def stack_encoders(num_encoders, x, d_model, w_qkvs, wos, dense_weights, head_num, units):
     r = x
     for e in range(num_encoders):
-        r = encoder(r, d_model, head_num, units)
+        r = encoder(r, d_model, w_qkvs[e], wos[e], dense_weights[e], head_num, units)
     return r
 
 
 
-def final_layer(input, output_shape, activation):
+def final_layer(input, output_shape, weights, activation):
     output_size = tf.reduce_prod(output_shape)
     flatten_layer = tf.keras.layers.Flatten()
     dense_layer = tf.keras.layers.Dense(output_size, activation=activation)
+    #TODO inject weights to dense_layer
     reshape_layer = tf.keras.layers.Reshape(output_shape)
     x = flatten_layer(input)
     x = dense_layer(x)
@@ -174,13 +183,30 @@ train, test = split_train_test(dataset)
 x_train, y_train = get_xy(train, input_length=input_length)
 x_test, y_test = get_xy(test, input_length=input_length)
 
-# Run transformer:
-d_model = 2
 x_train = x_train.astype('float32')
-x_train = x_train[:64,:,:]
+x_train = tf.reshape(x_train, (x_train.shape[0], x_train.shape[1], dataset.shape[1], dataset.shape[2]))
+y_train = tf.reshape(y_train, (y_train.shape[0], dataset.shape[1], dataset.shape[2]))
+x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
+y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
+
+# Run transformer:
+num_encoders = 6
+d_model = 2
+num_heads = 1
+# TODO we need to implement batching
+x_train = x_train[:64,...]
+
+# parameters:
+w_qkvs = [[create_w_qkv(x_train.shape, d_model)for __ in range(num_heads)] for _ in range(num_encoders)]
+# wo = tf.random.normal([z_all.shape[0],z_all.shape[2],x.shape[2]], mean=0.0, stddev=1.0)
+wos = [tf.random.normal([input_length, d_model, x_train.shape[-1]], mean=0.0, stddev=1.0) for _ in range(num_encoders)]
+dense_weights = [None for _ in range(num_encoders)]
+final_weights = None
 # test_encoder = encoder(x_train, d_model, head_num=1, units=64)
-stacked_encoders = stack_encoders(6, x_train, d_model, head_num=1, units=64)
-pred = final_layer(input=stacked_encoders, output_shape=y_train.shape[1:], activation='sigmoid')
+stacked_encoders = stack_encoders(num_encoders, x_train[0], d_model, w_qkvs, wos, dense_weights,
+                                  head_num=num_heads, units=64)
+pred = final_layer(input=stacked_encoders, output_shape=y_train.shape[1:],
+                   weights=final_weights, activation='sigmoid')
 
 # Visualization Test:
 test = np.zeros((64,24,216))
