@@ -150,12 +150,7 @@ def encoder(x, d_model, w_qkvs, wo, dense_weights, head_num=1, units=64):
 
     return output
 
-<<<<<<< Updated upstream
 def stack_encoders(num_encoders, x, d_model, w_qkvs, wos, dense_weights, head_num, units):
-=======
-
-def stack_encoders(num_encoders, x, d_model, head_num, units):
->>>>>>> Stashed changes
     r = x
     for e in range(num_encoders):
         r = encoder(r, d_model, w_qkvs[e], wos[e], dense_weights[e], head_num, units)
