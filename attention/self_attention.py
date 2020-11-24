@@ -26,7 +26,6 @@ def positional_encoding(position, model_shape, broadcast=True):
     Copied from tutorial. The dimension doesnt change the implementation of
     the positional encoding. Only the correct dimension (time dimension) must
     sent as "position" input to positional_encoding.
-    d_model is hyperparameter.
     """
 
     angle_dim = model_shape[0]
@@ -93,7 +92,7 @@ def self_attention(q,k,v,mask=None):
     se = tf.nn.softmax(z, axis=-1) 
     se = tf.expand_dims(se, -1)
     se = tf.expand_dims(se, -1)
-     
+
     # Option 1 (Comment option 1 or option 2): 
     # ve = tf.broadcast_to(v, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])    
     # se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])
@@ -103,9 +102,8 @@ def self_attention(q,k,v,mask=None):
     se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[1]])
     z = tf.matmul(se,v)
     ##
-    
     z = tf.reduce_sum(z, axis=1)
-        
+
     return z
 
 
@@ -152,7 +150,12 @@ def encoder(x, d_model, w_qkvs, wo, dense_weights, head_num=1, units=64):
 
     return output
 
+<<<<<<< Updated upstream
 def stack_encoders(num_encoders, x, d_model, w_qkvs, wos, dense_weights, head_num, units):
+=======
+
+def stack_encoders(num_encoders, x, d_model, head_num, units):
+>>>>>>> Stashed changes
     r = x
     for e in range(num_encoders):
         r = encoder(r, d_model, w_qkvs[e], wos[e], dense_weights[e], head_num, units)
@@ -209,11 +212,11 @@ pred = final_layer(input=stacked_encoders, output_shape=y_train.shape[1:],
                    weights=final_weights, activation='sigmoid')
 
 # Visualization Test:
-test = np.zeros((64,24,216))
-bb = positional_encoding(test.shape[0],test.shape, broadcast=True)
-bb = bb.numpy()
-bb = bb[0].reshape((bb.shape[3],-1))
-visualize_pos_encoding(bb)
+# test = np.zeros((64,24,216))
+# bb = positional_encoding(test.shape[0],test.shape, broadcast=True)
+# bb = bb.numpy()
+# bb = bb[0].reshape((bb.shape[3],-1))
+# visualize_pos_encoding(bb)
 
 # Encoder Test:
 # aa = np.arange(144).reshape((12,4,3))

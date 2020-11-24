@@ -24,6 +24,8 @@ def visualize_pos_encoding(array):
 
 def attention_plotter(attention_weights, y_labels, save=False):
     """
+    Visualization for attention weights for each input:
+    Inputs:
     attention_weights: Numpy array with shape (batch,number of attention heads)
     y_labels: Labels of y-axis (here: daily hours) in alist with batch length.
     """
@@ -48,6 +50,7 @@ def attention_plotter(attention_weights, y_labels, save=False):
         fig = ax.get_figure()
         fig.savefig("Attention Visualization.png")
 
+    
 
 # To call tensorboard:
 #tensorboard --logdir=/notebooks/tensorized_transformers/vanilla_transformer/tb_logs --bind_all
