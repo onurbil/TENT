@@ -58,7 +58,7 @@ def attention_plotter(attention_weights, y_labels, save=False):
 
 class callbacks():
     def __init__(self, transformer, optimizer, tensorBoard_path,save_checkpoints):
-        self.tensorBoard_path = tensorBoard_path + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        self.tensorBoard_path = tensorBoard_path + datetime.now().strftime("%Y%m%d-%H%M%S")
         self.save_checkpoints = save_checkpoints
         self.ckpt = tf.train.Checkpoint(transformer=transformer,
                                         optimizer=optimizer)
