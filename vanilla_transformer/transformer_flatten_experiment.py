@@ -6,7 +6,7 @@ import tensorflow as tf
 import tensorflow.keras as kr
 
 import vanilla_transformer.transformer as vt
-import debugging_tools.results as results
+import visualization_tools.visualization as results
 
 def prepare_dataset(input_length, prediction_time, batch_size,
                     dataset_path, test_size, valid_size, dataset_limit=None):
