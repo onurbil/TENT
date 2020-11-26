@@ -107,7 +107,7 @@ def self_attention(q,k,v,mask=None):
     return z
 
 
-def multihead_self_attention(x,d_model,head_num, w_qkvs, wo):
+def multihead_self_attention(x,head_num, w_qkvs, wo):
     """
     Run self_attention() 'head_num' different times and concatenate to axis=2.
     Initialize wo matrix. 
@@ -124,96 +124,107 @@ def multihead_self_attention(x,d_model,head_num, w_qkvs, wo):
         z = self_attention(q,k,v)
         z_all = tf.concat([z_all, z], axis=2)
     
-    wo = tf.random.normal([z_all.shape[0],z_all.shape[2],x.shape[2]], mean=0.0, stddev=1.0)
+    # wo = tf.random.normal([z_all.shape[0],z_all.shape[2],x.shape[2]], mean=0.0, stddev=1.0)
     z = tf.matmul(z_all,wo)
     return z
 
 
-def encoder(x, d_model, w_qkvs, wo, dense_weights, head_num=1, units=64):
-    # x = x.astype('float32')
-    z = multihead_self_attention(x,d_model,head_num, w_qkvs, wo)
+def encoder(x, w_qkvs, wo, linear, head_num=1):
+    z = multihead_self_attention(x,head_num, w_qkvs, wo)
     sum = tf.math.add(x, z)
     norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)(sum)
 
-    # TODO: inject dense_weights into the model
-    model = tf.keras.Sequential([
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(units,activation='relu'),
-    # tf.keras.layers.Dropout(0.1),
-    tf.keras.layers.Dense(tf.multiply(z.shape[-1],z.shape[-2]) ,activation='relu'),
-    # tf.keras.layers.Dropout(0.1),
-    tf.keras.layers.Reshape(z.shape[-2:])
-    ])        
-    dense = model(norm)
+    dense = linear(norm)
 
     output = tf.keras.layers.LayerNormalization(epsilon=1e-6)(dense+norm)
 
     return output
 
-def stack_encoders(num_encoders, x, d_model, w_qkvs, wos, dense_weights, head_num, units):
+def stack_encoders(num_encoders, x, d_model, weights, head_num, units):
     r = x
     for e in range(num_encoders):
-        r = encoder(r, d_model, w_qkvs[e], wos[e], dense_weights[e], head_num, units)
+        w_qkv = weights[e][0]
+        wo = wos[e][1]
+        linear = weights[e][2]
+        r = encoder(r, w_qkv, wo, linear, head_num)
     return r
 
 
 
 def final_layer(input, output_shape, weights, activation):
+    input = tf.expand_dims(input, axis=0)
     output_size = tf.reduce_prod(output_shape)
     flatten_layer = tf.keras.layers.Flatten()
     dense_layer = tf.keras.layers.Dense(output_size, activation=activation)
     #TODO inject weights to dense_layer
     reshape_layer = tf.keras.layers.Reshape(output_shape)
+
     x = flatten_layer(input)
     x = dense_layer(x)
     x = reshape_layer(x)
     return x
 
 
-# Load dataset:
-filename = 'dataset_tensor.npy'
-file_path = os.path.join(PROCESSED_DATASET_DIR, filename)
-dataset = np.load(file_path, allow_pickle=True)
+if __name__ == '__main__':
+    # Load dataset:
+    filename = 'dataset_tensor.npy'
+    file_path = os.path.join(PROCESSED_DATASET_DIR, filename)
+    dataset = np.load(file_path, allow_pickle=True)
 
-# Get x_train, y_train, x_test, y_test:
-input_length=24
-train, test = split_train_test(dataset)
-x_train, y_train = get_xy(train, input_length=input_length)
-x_test, y_test = get_xy(test, input_length=input_length)
+    # Get x_train, y_train, x_test, y_test:
+    input_length=24
+    train, test = split_train_test(dataset)
+    x_train, y_train = get_xy(train, input_length=input_length)
+    x_test, y_test = get_xy(test, input_length=input_length)
 
-x_train = x_train.astype('float32')
-x_train = tf.reshape(x_train, (x_train.shape[0], x_train.shape[1], dataset.shape[1], dataset.shape[2]))
-y_train = tf.reshape(y_train, (y_train.shape[0], dataset.shape[1], dataset.shape[2]))
-x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
-y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
+    x_train = x_train.astype('float32')
+    x_train = tf.reshape(x_train, (x_train.shape[0], x_train.shape[1], dataset.shape[1], dataset.shape[2]))
+    y_train = tf.reshape(y_train, (y_train.shape[0], dataset.shape[1], dataset.shape[2]))
+    x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
+    y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
 
-# Run transformer:
-num_encoders = 6
-d_model = 2
-num_heads = 1
-# TODO we need to implement batching
-x_train = x_train[:64,...]
+    # Run transformer:
+    num_encoders = 6
+    d_model = 2
+    num_heads = 1
+    units=64
+    # TODO we need to implement batching
+    x_train = x_train[:64,...]
 
-# parameters:
-w_qkvs = [[create_w_qkv(x_train.shape, d_model)for __ in range(num_heads)] for _ in range(num_encoders)]
-# wo = tf.random.normal([z_all.shape[0],z_all.shape[2],x.shape[2]], mean=0.0, stddev=1.0)
-wos = [tf.random.normal([input_length, d_model, x_train.shape[-1]], mean=0.0, stddev=1.0) for _ in range(num_encoders)]
-dense_weights = [None for _ in range(num_encoders)]
-final_weights = None
-# test_encoder = encoder(x_train, d_model, head_num=1, units=64)
-stacked_encoders = stack_encoders(num_encoders, x_train[0], d_model, w_qkvs, wos, dense_weights,
-                                  head_num=num_heads, units=64)
-pred = final_layer(input=stacked_encoders, output_shape=y_train.shape[1:],
-                   weights=final_weights, activation='sigmoid')
+    # parameters:
+    w_qkvs = [[create_w_qkv(x_train.shape, d_model)for __ in range(num_heads)] for _ in range(num_encoders)]
+    # wo = tf.random.normal([z_all.shape[0],z_all.shape[2],x.shape[2]], mean=0.0, stddev=1.0)
+    wos = [tf.random.normal([input_length, d_model, x_train.shape[-1]], mean=0.0, stddev=1.0) for _ in range(num_encoders)]
+    encoder_weights = []
+    for i in range(num_encoders):
+        w_qkv = [create_w_qkv(x_train.shape, d_model) for __ in range(num_heads)]
+        wo = tf.random.normal([input_length, d_model, x_train.shape[-1]], mean=0.0, stddev=1.0)
+        linear = tf.keras.Sequential([
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(units, activation='relu'),
+            # tf.keras.layers.Dropout(0.1),
+            tf.keras.layers.Dense(tf.multiply(x_train.shape[-1],x_train.shape[-2]) ,activation='relu'),
+            # tf.keras.layers.Dropout(0.1),
+            tf.keras.layers.Reshape(x_train.shape[-2:])
+        ])
+        encoder_weights.append((w_qkv, wo, linear))
 
-# Visualization Test:
-# test = np.zeros((64,24,216))
-# bb = positional_encoding(test.shape[0],test.shape, broadcast=True)
-# bb = bb.numpy()
-# bb = bb[0].reshape((bb.shape[3],-1))
-# visualize_pos_encoding(bb)
+    final_weights = None
+    # test_encoder = encoder(x_train, d_model, head_num=1, units=64)
+    encoders_result = stack_encoders(num_encoders, x_train[0], d_model, encoder_weights,
+                                      head_num=num_heads, units=units)
+    pred = final_layer(input=encoders_result, output_shape=y_train.shape[-2:],
+                       weights=final_weights, activation='tanh')
 
-# Encoder Test:
-# aa = np.arange(144).reshape((12,4,3))
-# aa = aa.astype('float32')
-# bb = encoder(aa, d_model, head_num=1, units=64)
+    print(f'pred: {pred.shape}')
+    # Visualization Test:
+    # test = np.zeros((64,24,216))
+    # bb = positional_encoding(test.shape[0],test.shape, broadcast=True)
+    # bb = bb.numpy()
+    # bb = bb[0].reshape((bb.shape[3],-1))
+    # visualize_pos_encoding(bb)
+
+    # Encoder Test:
+    # aa = np.arange(144).reshape((12,4,3))
+    # aa = aa.astype('float32')
+    # bb = encoder(aa, d_model, head_num=1, units=64)
