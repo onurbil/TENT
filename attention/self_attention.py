@@ -218,11 +218,14 @@ if __name__ == '__main__':
 
     print(f'pred: {pred.shape}')
     # Visualization Test:
-    # test = np.zeros((64,24,216))
-    # bb = positional_encoding(test.shape[0],test.shape, broadcast=True)
-    # bb = bb.numpy()
-    # bb = bb[0].reshape((bb.shape[3],-1))
-    # visualize_pos_encoding(bb)
+    test = np.zeros((64,24,216))
+    bb = positional_encoding(test.shape[0],test.shape, broadcast=True)
+    
+    bb = bb.numpy()
+    print(bb.shape)
+    bb = bb[0].reshape((bb.shape[1],-1))
+    print(bb.shape)
+    visualize_pos_encoding(bb)
 
     # Encoder Test:
     # aa = np.arange(144).reshape((12,4,3))

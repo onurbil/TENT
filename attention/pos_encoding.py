@@ -5,6 +5,7 @@ import tensorflow as tf
 from keras import backend as K 
 from keras.layers import Layer
 from keras.models import Sequential
+from visualization_tools.visualization import visualize_pos_encoding
 
 
 def get_angles(pos, i, d_model):
@@ -52,11 +53,24 @@ class PositionalEncoding(Layer):
 
         
 # Test the PositionalEncoding layer:
-test = np.zeros((64,24,216))
+# test = np.zeros((64,24,216))
+test = np.zeros((1,24,36,6))
+
 model = Sequential()
-model.add(PositionalEncoding(input_shape = (test.shape[1],test.shape[2]), model_shape=test.shape, broadcast=True)) 
+model.add(PositionalEncoding(input_shape = (test.shape[1],test.shape[2],test.shape[3]), model_shape=test.shape, broadcast=True)) 
 model.summary()
 
 pos_encoded = model.predict(test)
-print(test)
-print(pos_encoded)
+# print(test)
+# print(pos_encoded)
+
+
+# test = np.zeros((64,24,216))
+# bb = positional_encoding(test.shape[0],test.shape, broadcast=True)
+bb = pos_encoded[0]
+
+# bb = bb.numpy()
+print(bb.shape)
+bb = bb[0].reshape((bb.shape[1],-1))
+print(bb.shape)
+visualize_pos_encoding(bb)
