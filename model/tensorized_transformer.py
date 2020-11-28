@@ -65,6 +65,44 @@ import common.paths
 #
 #         return z
 
+def get_angles(pos, i, d_model):
+    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+    return pos * angle_rates
+
+class PositionalEncoding(kr.layers.Layer):
+    def __init__(self,
+                 input_length,
+                 d_model,
+                 **kwargs):
+        super(PositionalEncoding, self).__init__(**kwargs)
+        self.input_length = input_length
+        self.d_model = d_model
+        self.reshape: tf.keras.layers.Reshape = None
+
+    def build(self, input_shape):
+        self.position = input_shape[-2]
+        self.d_model = input_shape[-1]
+        self.reshape = tf.keras.layers.Reshape(input_shape[-3:])
+        # self.output_dim = tf.zeros([input_shape[-2], input_shape[-1], 0])
+
+        # super(PositionalEncoding, self).build(input_shape)
+
+    def call(self, input_data):
+        seq_len = input_data.shape[1]
+        angle_rads = get_angles(np.arange(self.position)[:, np.newaxis],
+                                np.arange(self.d_model)[np.newaxis, :],
+                                self.d_model)
+
+        # apply sin to even indices in the array; 2i
+        angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
+
+        # apply cos to odd indices in the array; 2i+1
+        angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
+
+        pos_encoding = angle_rads[np.newaxis, ...]
+        x = tf.cast(pos_encoding, dtype=tf.float32)
+        out = input_data + x
+        return out
 
 class EncoderLayer(kr.layers.Layer):
     def __init__(self,
@@ -205,11 +243,13 @@ dense_units = 64
 input_shape = (24, 36, 6)
 output_shape = (36, 6)
 initializer = 'RandomNormal'
+maximum_position_encoding = 100
 
 
 model = kr.Sequential([
     kr.Input(input_shape),
     # positional encoding
+    PositionalEncoding(input_length, d_model),
     EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
     EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
     kr.layers.Flatten(),
