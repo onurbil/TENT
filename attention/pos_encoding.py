@@ -53,11 +53,9 @@ class PositionalEncoding(Layer):
 
         
 # Test the PositionalEncoding layer:
-# test = np.zeros((64,24,216))
-test = np.zeros((1,24,36,6))
-
+test = np.zeros((64,24,216))
 model = Sequential()
-model.add(PositionalEncoding(input_shape = (test.shape[1],test.shape[2],test.shape[3]), model_shape=test.shape, broadcast=True)) 
+model.add(PositionalEncoding(input_shape = (test.shape[1],test.shape[2]), model_shape=test.shape, broadcast=True)) 
 model.summary()
 
 pos_encoded = model.predict(test)
@@ -67,7 +65,7 @@ pos_encoded = model.predict(test)
 
 # test = np.zeros((64,24,216))
 # bb = positional_encoding(test.shape[0],test.shape, broadcast=True)
-bb = pos_encoded[0]
+bb = pos_encoded
 
 # bb = bb.numpy()
 print(bb.shape)

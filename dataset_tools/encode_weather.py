@@ -26,7 +26,9 @@ def encode_weather_desc(input_folder, output_folder, file, norm=True):
     df_table.iloc[:,1:] = df_table.iloc[:,1:].apply(LabelEncoder().fit_transform)
     np_table = df_table.to_numpy()
     if norm:
-        np_table[:,1:]=np_table[:,1:]/np_table[:,1:].max()
+        max_val = np_table[:,1:].max()
+        min_val = np_table[:,1:].min()
+        np_table[:,1:] = (np_table[:,1:] - min_val)/(max_val - min_val)
 
     new_filename = Path(file).stem
     new_filepath = os.path.join(output_folder, new_filename)
