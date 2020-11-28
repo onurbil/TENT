@@ -243,8 +243,6 @@ dense_units = 64
 input_shape = (24, 36, 6)
 output_shape = (36, 6)
 initializer = 'RandomNormal'
-maximum_position_encoding = 100
-
 
 model = kr.Sequential([
     kr.Input(input_shape),
