@@ -72,14 +72,14 @@ class EncoderLayer(kr.layers.Layer):
                  d_model,
                  head_num,
                  dense_units,
-                 # initializer='he normal',
+                 initializer,
                  **kwargs):
         super(EncoderLayer, self).__init__(**kwargs)
 
         self.input_length = input_length
         self.d_model = d_model
         self.head_num = head_num
-        # self.initializer = keras.initializers.get(initializer)
+        self.initializer = tf.keras.initializers.get(initializer)
 
         self.wq = None
         self.wk = None
@@ -95,25 +95,25 @@ class EncoderLayer(kr.layers.Layer):
         self.z_all = tf.zeros([input_shape[-2], input_shape[-1], 0])
         self.wq = self.add_weight(
             shape=(input_shape[-1], d_model),
-            initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=1., seed=None),
+            initializer=self.initializer,
             name="wq",
             trainable=True,
         )
         self.wk = self.add_weight(
             shape=(input_shape[-1], d_model),
-            initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=1., seed=None),
+            initializer=self.initializer,
             name="wk",
             trainable=True,
         )
         self.wv = self.add_weight(
             shape=(input_shape[-1], d_model),
-            initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=1., seed=None),
+            initializer=self.initializer,
             name="wv",
             trainable=True,
         )
         self.wo = self.add_weight(
             shape=(self.input_length, self.d_model, input_shape[-1]),
-            initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=1., seed=None),
+            initializer=self.initializer,
             name="wo",
             trainable=True,
         )
@@ -204,13 +204,14 @@ head_num = 2
 dense_units = 64
 input_shape = (24, 36, 6)
 output_shape = (36, 6)
+initializer = 'RandomNormal'
 
 
 model = kr.Sequential([
     kr.Input(input_shape),
     # positional encoding
-    EncoderLayer(input_length, d_model, head_num, dense_units),
-    EncoderLayer(input_length, d_model, head_num, dense_units),
+    EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+    EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
     kr.layers.Flatten(),
     kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
     kr.layers.Reshape(output_shape),
