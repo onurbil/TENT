@@ -166,7 +166,6 @@ class EncoderLayer(kr.layers.Layer):
         v = tf.matmul(inputs, self.wv)
 
         d_k = int(self.d_model / self.head_num)
-        # TODO: move z to constructor (or build() method) to avoid creating objects every time call() is invoked?
         zs = []
         for i in range(self.head_num):
             index = i * d_k
@@ -225,70 +224,71 @@ class EncoderLayer(kr.layers.Layer):
 #     pass
 
 
-# Load dataset:
-filename = 'dataset_tensor.npy'
-file_path = os.path.join(common.paths.PROCESSED_DATASET_DIR, filename)
-dataset = np.load(file_path, allow_pickle=True)
+if __name__ == '__main__':
+    # Load dataset:
+    filename = 'dataset_tensor.npy'
+    file_path = os.path.join(common.paths.PROCESSED_DATASET_DIR, filename)
+    dataset = np.load(file_path, allow_pickle=True)
 
-# Get x_train, y_train, x_test, y_test:
-input_length = 24
-train, test = dataset_tools.split.split_train_test(dataset)
-x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length)
-x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length)
+    # Get x_train, y_train, x_test, y_test:
+    input_length = 24
+    train, test = dataset_tools.split.split_train_test(dataset)
+    x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length)
+    x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length)
 
-x_train = x_train.astype('float32')
-x_train = tf.reshape(x_train, (x_train.shape[0], x_train.shape[1], dataset.shape[1], dataset.shape[2]))
-y_train = tf.reshape(y_train, (y_train.shape[0], dataset.shape[1], dataset.shape[2]))
-x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
-y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
+    x_train = x_train.astype('float32')
+    x_train = tf.reshape(x_train, (x_train.shape[0], x_train.shape[1], dataset.shape[1], dataset.shape[2]))
+    y_train = tf.reshape(y_train, (y_train.shape[0], dataset.shape[1], dataset.shape[2]))
+    x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
+    y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
 
-print(y_test.shape)
+    print(y_test.shape)
 
-input_length = 24
-d_model = 10
-head_num = 2
-dense_units = 64
-input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
-# output_shape = (36, x_train.shape[-1])
-# output_shape = (1, x_train.shape[-1])
-output_shape = (1, 1)
-y_train = y_train[..., 0, 5]
-y_test = y_test[..., 0, 5]
-initializer = 'RandomNormal'
+    input_length = 24
+    d_model = 10
+    head_num = 2
+    dense_units = 64
+    input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
+    # output_shape = (36, x_train.shape[-1])
+    # output_shape = (1, x_train.shape[-1])
+    output_shape = (1, 1)
+    y_train = y_train[..., 0, 5]
+    y_test = y_test[..., 0, 5]
+    initializer = 'RandomNormal'
 
-# x_train = np.zeros((1,) + input_shape)
-# y_train = np.zeros((1,) + input_shape[1:])
+    # x_train = np.zeros((1,) + input_shape)
+    # y_train = np.zeros((1,) + input_shape[1:])
 
-model = kr.Sequential([
-    kr.Input(input_shape),
-    PositionalEncoding(broadcast=True),
-    EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-    EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-    kr.layers.Flatten(),
-    kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
-    kr.layers.Reshape(output_shape),
-])
+    model = kr.Sequential([
+        kr.Input(input_shape),
+        PositionalEncoding(broadcast=True),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        kr.layers.Flatten(),
+        kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
+        kr.layers.Reshape(output_shape),
+    ])
 
-model.summary()
-model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+    model.summary()
+    model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
-num_examples = 5000
-x_train = x_train[:num_examples]
-y_train = y_train[:num_examples]
-model.fit(x_train, y_train, epochs=4, batch_size=1)
+    # num_examples = 5000
+    # x_train = x_train[:num_examples]
+    # y_train = y_train[:num_examples]
+    model.fit(x_train, y_train, epochs=4, batch_size=1)
 
-# pred = model.predict(x_test[0])
-# print(pred.shape)
+    # pred = model.predict(x_test[0])
+    # print(pred.shape)
 
-num_test_examples = 1000
-x_test = x_test[:num_test_examples, ...]
-y_test = y_test[:num_test_examples]
-preds = []
-for i in range(x_test.shape[0]):
-    if (i + 1) % 100 == 0:
-        print(f'prediction: {i + 1}/{x_test.shape[0]}')
-    preds.append(model.predict(x_test[i][np.newaxis, ...]))
-pred = np.concatenate(preds, axis=0)
-mse = np.mean(kr.metrics.mse(y_test, pred))
-mae = np.mean(kr.metrics.mae(y_test, pred))
-print(f'mse: {mse}, mae: {mae}')
+    num_test_examples = 1000
+    x_test = x_test[:num_test_examples, ...]
+    y_test = y_test[:num_test_examples]
+    preds = []
+    for i in range(x_test.shape[0]):
+        if (i + 1) % 100 == 0:
+            print(f'prediction: {i + 1}/{x_test.shape[0]}')
+        preds.append(model.predict(x_test[i][np.newaxis, ...]))
+    pred = np.concatenate(preds, axis=0)
+    mse = np.mean(kr.metrics.mse(y_test, pred))
+    mae = np.mean(kr.metrics.mae(y_test, pred))
+    print(f'mse: {mse}, mae: {mae}')
