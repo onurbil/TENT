@@ -134,19 +134,19 @@ class EncoderLayer(kr.layers.Layer):
     def build(self, input_shape):
         self.z_all = tf.zeros([input_shape[-2], input_shape[-1], 0])
         self.wq = self.add_weight(
-            shape=(input_shape[-1], d_model),
+            shape=(input_shape[-1], self.d_model),
             initializer=self.initializer,
             name="wq",
             trainable=True,
         )
         self.wk = self.add_weight(
-            shape=(input_shape[-1], d_model),
+            shape=(input_shape[-1], self.d_model),
             initializer=self.initializer,
             name="wk",
             trainable=True,
         )
         self.wv = self.add_weight(
-            shape=(input_shape[-1], d_model),
+            shape=(input_shape[-1], self.d_model),
             initializer=self.initializer,
             name="wv",
             trainable=True,
