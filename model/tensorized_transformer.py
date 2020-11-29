@@ -113,6 +113,9 @@ class EncoderLayer(kr.layers.Layer):
                  **kwargs):
         super(EncoderLayer, self).__init__(**kwargs)
 
+        # TODO: add meaningful description to the assertion
+        assert (d_model % head_num == 0)
+
         self.input_length = input_length
         self.d_model = d_model
         self.head_num = head_num
@@ -158,17 +161,21 @@ class EncoderLayer(kr.layers.Layer):
         self.reshape = tf.keras.layers.Reshape(input_shape[-3:])
 
     def call(self, inputs):
-        # for i in range(self.head_num):
-        #     q, k, v = attention.self_attention.qkv_matrices(inputs, self.w_qkvs[i])
-        #     z = attention.self_attention.self_attention(q, k, v)
-        #     z_all = tf.concat([z_all, z], axis=2)
-        # z = tf.matmul(z_all, self.wo)
-
         q = tf.matmul(inputs, self.wq)
         k = tf.matmul(inputs, self.wk)
         v = tf.matmul(inputs, self.wv)
 
-        z = self.self_attention(q, k, v)
+        d_k = int(self.d_model / self.head_num)
+        # TODO: move z to constructor (or build() method) to avoid creating objects every time call() is invoked?
+        zs = []
+        for i in range(self.head_num):
+            index = i * d_k
+            zs.append(self.self_attention(q[..., index:index + d_k],
+                                          k[..., index:index + d_k],
+                                          v[..., index:index + d_k]))
+
+        z = tf.concat(zs, axis=-1)
+        # z = self.self_attention(q, k, v)
         z = tf.matmul(z, self.wo)
 
         sum = tf.math.add(inputs, z)
@@ -235,14 +242,22 @@ y_train = tf.reshape(y_train, (y_train.shape[0], dataset.shape[1], dataset.shape
 x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
 y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
 
+print(y_test.shape)
 
 input_length = 24
 d_model = 10
 head_num = 2
 dense_units = 64
-input_shape = (input_length, 36, 6)
-output_shape = (36, 6)
+input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
+# output_shape = (36, x_train.shape[-1])
+# output_shape = (1, x_train.shape[-1])
+output_shape = (1, 1)
+y_train = y_train[..., 0, 5]
+y_test = y_test[..., 0, 5]
 initializer = 'RandomNormal'
+
+# x_train = np.zeros((1,) + input_shape)
+# y_train = np.zeros((1,) + input_shape[1:])
 
 model = kr.Sequential([
     kr.Input(input_shape),
@@ -255,15 +270,25 @@ model = kr.Sequential([
 ])
 
 model.summary()
-model.compile(optimizer='adam', loss='mae')
+model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
-num_examples = 1000
+num_examples = 5000
 x_train = x_train[:num_examples]
 y_train = y_train[:num_examples]
-print(x_train.shape, y_train.shape)
+model.fit(x_train, y_train, epochs=4, batch_size=1)
 
-model.fit(x_train, y_train, epochs=100, batch_size=1)
+# pred = model.predict(x_test[0])
+# print(pred.shape)
 
-pred = model.predict(x_test[0])
-print(pred.shape)
-
+num_test_examples = 1000
+x_test = x_test[:num_test_examples, ...]
+y_test = y_test[:num_test_examples]
+preds = []
+for i in range(x_test.shape[0]):
+    if (i + 1) % 100 == 0:
+        print(f'prediction: {i + 1}/{x_test.shape[0]}')
+    preds.append(model.predict(x_test[i][np.newaxis, ...]))
+pred = np.concatenate(preds, axis=0)
+mse = np.mean(kr.metrics.mse(y_test, pred))
+mae = np.mean(kr.metrics.mae(y_test, pred))
+print(f'mse: {mse}, mae: {mae}')
