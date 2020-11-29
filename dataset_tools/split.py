@@ -5,6 +5,7 @@ First split the dataset in train and test array with 'split_train_test'.
 Then split train and test into x_train, y_train, x_test, y_test with 'get_xy'.
 """
 
+
 def split_train_test(dataset, tr_batch_count=284, te_batch_count=69,
                      batch_size=128):
     """
@@ -18,10 +19,10 @@ def split_train_test(dataset, tr_batch_count=284, te_batch_count=69,
     te_batch_count: Batch count for test data.
     batch_size: Size of each batch.     
     """
-    dataset = dataset.reshape(dataset.shape[0],-1)
-    train_range = tr_batch_count*batch_size
-    test_range = te_batch_count*batch_size
-    train = dataset[-(train_range+test_range):-test_range]
+    dataset = dataset.reshape(dataset.shape[0], -1)
+    train_range = tr_batch_count * batch_size
+    test_range = te_batch_count * batch_size
+    train = dataset[-(train_range + test_range):-test_range]
     test = dataset[-test_range:]
 
     return train, test
@@ -46,12 +47,12 @@ def get_xy(array, input_length=24, lag=1):
 
     for i in range(input_length):
         rec = array[i:]
-        zeros_arr = np.zeros((shape0,shape1))
-        zeros_arr[:shape0-i,:] = rec
-        recurrent[:,i,:] = zeros_arr
+        zeros_arr = np.zeros((shape0, shape1))
+        zeros_arr[:shape0 - i, :] = rec
+        recurrent[:, i, :] = zeros_arr
 
-    recurrent = recurrent[:-(input_length-1),:,:]
-    x = recurrent[:-1]
-    y = recurrent[1:,input_length-1,:]
+    recurrent = recurrent[:-(input_length - lag), :, :]
+    x = recurrent[:-lag]
+    y = recurrent[lag:, -1, :]
 
-    return x,y
+    return x, y
