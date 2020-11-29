@@ -330,10 +330,14 @@ class Transformer(tf.keras.Model):
                     print(f'Epoch {epoch + 1} / {epochs} Batch {batch} Loss {train_loss.result():.4f} '
                           f'MSE {train_mse.result():.4f} MAE {train_mae.result():.4f}')
 
-            callbacks.save_checkpoint(epoch)
 
-            callbacks.store_data('MSE', train_mse.result(), epoch, 'train')
-            callbacks.store_data('MAE', train_mae.result(), epoch, 'train')
+            self.save_weights('./checkpoints/windspeed_owndata_lag4')
+
+
+            #callbacks.save_checkpoint(epoch)
+
+            #callbacks.store_data('MSE', train_mse.result(), epoch, 'train')
+            #callbacks.store_data('MAE', train_mae.result(), epoch, 'train')
 
             print(f'Epoch {epoch + 1} / {epochs} Loss {train_loss.result():.4f} '
                   f'MSE {train_mse.result():.4f} MAE {train_mae.result():.4f}')

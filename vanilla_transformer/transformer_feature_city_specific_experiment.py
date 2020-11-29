@@ -6,7 +6,7 @@ import tensorflow as tf
 import tensorflow.keras as kr
 
 import common.paths
-import vanilla_transformer as vt
+from vanilla_transformer.transformer import Transformer, CustomSchedule
 
 dataset = np.load(os.path.join(common.paths.PROCESSED_DATASET_DIR, 'dataset_tensor.npy'), allow_pickle=True)
 dataset = np.transpose(dataset, axes=[0, 2, 1])
@@ -14,13 +14,13 @@ num_features = dataset.shape[1]
 num_cities = dataset.shape[2]
 
 dataset = np.reshape(dataset, (dataset.shape[0], dataset.shape[1] * dataset.shape[2]))
-dataset = dataset[:1000, ...]
+
 
 print(dataset.shape)
 
 batch_size = 32
 input_length = 10
-lag = 1
+lag = 4
 
 num_examples = dataset.shape[0] - input_length - lag
 input_sequences = []
@@ -41,8 +41,8 @@ for b in range(0, len(input_sequences) - batch_size, batch_size):
 train_x = np.stack(batches_x, axis=0).astype(np.float32)
 train_y = np.stack(batches_y, axis=0).astype(np.float32)
 
-feature_index = None
-city_index = None
+feature_index = 5
+city_index = 0
 
 if feature_index and city_index:
     train_y = train_y[:, :, num_cities * feature_index + city_index]
@@ -68,10 +68,10 @@ dff = 64
 num_heads = 8
 dropout_rate = 0.1
 
-transformer = vt.Transformer(input_size, num_layers, d_model, num_heads, dff, input_length, output_size,
+transformer = Transformer(input_size, num_layers, d_model, num_heads, dff, input_length, output_size,
                              rate=dropout_rate)
 
-learning_rate = vt.CustomSchedule(d_model)
+learning_rate = CustomSchedule(d_model)
 optimizer = kr.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 # train_loss = kr.metrics.Mean(name='train_loss')
 

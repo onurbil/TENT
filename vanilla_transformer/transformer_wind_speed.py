@@ -6,7 +6,7 @@ import tensorflow as tf
 import tensorflow.keras as kr
 
 import common.paths
-import vanilla_transformer as vt
+from vanilla_transformer.transformer import Transformer, CustomSchedule
 
 """
     Size of dataset := N
@@ -79,10 +79,10 @@ dff = 64
 num_heads = 8
 dropout_rate = 0.1
 
-transformer = vt.Transformer(input_size, num_layers, d_model, num_heads, dff, input_length, output_size,
+transformer = Transformer(input_size, num_layers, d_model, num_heads, dff, input_length, output_size,
                              rate=dropout_rate)
 
-learning_rate = vt.CustomSchedule(d_model)
+learning_rate = CustomSchedule(d_model)
 optimizer = kr.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 # train_loss = kr.metrics.Mean(name='train_loss')
 
@@ -95,6 +95,8 @@ ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
 # if ckpt_manager.latest_checkpoint:
 #   ckpt.restore(ckpt_manager.latest_checkpoint)
 #   print ('Latest checkpoint restored!!')
+
+#transformer.load_weights('./checkpoints/windspeed')
 
 transformer.fit(train_x,
                 train_y,
