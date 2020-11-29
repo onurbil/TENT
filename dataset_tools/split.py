@@ -20,14 +20,14 @@ def split_train_test(dataset, tr_batch_count=284, te_batch_count=69,
     """
     dataset = dataset.reshape(dataset.shape[0],-1)
     train_range = tr_batch_count*batch_size
-    test_range = te_batch_count*batch_size    
+    test_range = te_batch_count*batch_size
     train = dataset[-(train_range+test_range):-test_range]
     test = dataset[-test_range:]
-    
+
     return train, test
-    
-    
-def get_xy(array, input_length=24):
+
+
+def get_xy(array, input_length=24, lag=1):
     """
     Make make_x and y arrays from given array:
     x:
@@ -36,14 +36,14 @@ def get_xy(array, input_length=24):
     x_3, x_4, x_5, ..., x_n+2
     with n=input_length.
     y:
-    y_4
-    y_5
-    y_6
+    y_(n+lag)
+    y_(n+1+lag)
+    y_(n+2+lag)
     """
     shape0 = array.shape[0]
     shape1 = array.shape[1]
     recurrent = np.zeros((shape0, input_length, shape1))
-    
+
     for i in range(input_length):
         rec = array[i:]
         zeros_arr = np.zeros((shape0,shape1))
@@ -53,5 +53,5 @@ def get_xy(array, input_length=24):
     recurrent = recurrent[:-(input_length-1),:,:]
     x = recurrent[:-1]
     y = recurrent[1:,input_length-1,:]
-        
+
     return x,y
