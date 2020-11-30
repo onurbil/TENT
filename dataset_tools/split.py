@@ -43,16 +43,16 @@ def get_xy(array, input_length=24, lag=1):
     """
     shape0 = array.shape[0]
     shape1 = array.shape[1]
-    recurrent = np.zeros((shape0, input_length, shape1))
+    recurrent = np.zeros((shape0, input_length + lag, shape1))
 
-    for i in range(input_length):
+    for i in range(input_length + lag):
         rec = array[i:]
         zeros_arr = np.zeros((shape0, shape1))
         zeros_arr[:shape0 - i, :] = rec
         recurrent[:, i, :] = zeros_arr
 
-    recurrent = recurrent[:-(input_length - lag), :, :]
-    x = recurrent[:-lag]
-    y = recurrent[lag:, -1, :]
+    recurrent = recurrent[:-(input_length + lag - 1), :, :]
+    x = recurrent[:, :input_length]
+    y = recurrent[:, -1, :]
 
     return x, y
