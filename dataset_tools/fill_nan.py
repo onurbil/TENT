@@ -28,7 +28,7 @@ def fill_nan_values(input_folder, output_folder, files, norm=True):
         np_table = df_table.to_numpy()
         if norm:
             max_val = np_table[:,1:].max()
-            min_val = np_table[:,1:].min()
+            min_val = np_table[:,1:].min()                      
             np_table[:,1:] = (np_table[:,1:] - min_val)/(max_val - min_val)
 
         new_filename = Path(file).stem
