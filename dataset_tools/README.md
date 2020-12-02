@@ -15,7 +15,9 @@ The order of measurements in 'dataset_tensor.npy' and the minimum, maximum value
 3:  weather description    (min: 0,        max: 36)
 4:  wind direction         (min: 0,        max: 360)
 5:  wind speed             (min: 0,        max: 50)
-
+6:  x coordinate of cities
+7:  y coordinate of cities
+8:  z coordinate of cities
 
 The order of cities in 'dataset_tensor.npy':
 
