@@ -1,4 +1,4 @@
-The 'dataset_tensor.npy' has shape of (45253,36,6) as (time, cities, measurement).
+The 'dataset_tensor.npy' has shape of (45253,36,9) as (time, cities, measurement).
 
 
 The first and last dates in 'dataset_tensor.npy':

@@ -25,6 +25,7 @@ def encode_weather_desc(input_folder, output_folder, file, norm=True):
     df_table.fillna(method='bfill', inplace=True)
     df_table.iloc[:,1:] = df_table.iloc[:,1:].apply(LabelEncoder().fit_transform)
     np_table = df_table.to_numpy()
+    
     if norm:
         max_val = np_table[:,1:].max()
         min_val = np_table[:,1:].min()
