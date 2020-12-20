@@ -276,7 +276,7 @@ if __name__ == '__main__':
     d_model = 10
     head_num = 2
     dense_units = 64
-    batch_size = 3
+    batch_size = 64
     # loss regularization hyperparameter:
     lambada = 0.1
     
@@ -305,13 +305,20 @@ if __name__ == '__main__':
     model.compile(optimizer='adam', loss='mse', metrics=['mae'])
     # model.compile(optimizer='adam', loss=custom_loss_function(lambada), metrics=['mae'])
 
-    num_examples = 1000
+    num_examples = 5000
     x_train = x_train[:num_examples]
     y_train = y_train[:num_examples]
     
     num_test_examples = 100
     x_test = x_test[:num_test_examples, ...]
     y_test = y_test[:num_test_examples]
+    
+    # num_examples = 5000 
+    # num_valid_examples = 1000 
+    # x_valid = x_train[-num_examples - num_valid_examples:-num_examples, ...] 
+    # y_valid = y_train[-num_examples - num_valid_examples:-num_examples] 
+    # x_train = x_train[-num_examples:] 
+    # y_train = y_train[-num_examples:]     
     
     
     # To check if correct parameters are sent to loss function:
