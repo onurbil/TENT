@@ -8,8 +8,9 @@ import dataset_tools.split
 import attention.self_attention
 import common.paths
 from visualization_tools.visualization import visualize_pos_encoding
+from keras.callbacks import LambdaCallback
 
-
+      
 # class SelfAttentionLayer(kr.layers.Layer):
 #     def __init__(self,
 #                  input_length,
@@ -224,6 +225,21 @@ class EncoderLayer(kr.layers.Layer):
 #     pass
 
 
+
+def custom_loss_function(lambada):
+    
+    # print(model.predict(x_train[batch][np.newaxis, ...]))
+    # tf.print(previous_pred[0])
+    # tf.print(lambada)
+    
+    def mse_loss_function(y_true, y_pred):
+
+        loss = tf.keras.backend.mean(tf.math.reduce_sum(tf.square(y_true-y_pred))) #+ lambada * (y_pred-previous_pred)            
+        return loss
+    
+    return mse_loss_function
+        
+
 if __name__ == '__main__':
     # Load dataset:
     filename = 'dataset_tensor.npy'
@@ -244,10 +260,14 @@ if __name__ == '__main__':
 
     print(y_test.shape)
 
+    epochs=4
     input_length = 24
     d_model = 10
     head_num = 2
     dense_units = 64
+    batch_size=1
+    # loss regularization hyperparameter:
+    lambada = 0.1
     input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
     # output_shape = (36, x_train.shape[-1])
     # output_shape = (1, x_train.shape[-1])
@@ -268,21 +288,31 @@ if __name__ == '__main__':
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
     ])
-
     model.summary()
-    model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+    model.compile(optimizer='sgd', loss='mse', metrics=['mae'])
+    # model.compile(optimizer='adam', loss=custom_loss_function(lambada), metrics=['mae'])
 
-    # num_examples = 5000
-    # x_train = x_train[:num_examples]
-    # y_train = y_train[:num_examples]
-    model.fit(x_train, y_train, epochs=4, batch_size=1)
+    num_examples = 1000
+    x_train = x_train[:num_examples]
+    y_train = y_train[:num_examples]
+    
+    num_test_examples = 100
+    x_test = x_test[:num_test_examples, ...]
+    y_test = y_test[:num_test_examples]
+    
+    # To check if correct parameters are sent to loss function:
+    batch_pred_callback = LambdaCallback(on_batch_end=lambda batch,logs: print(' - pred: ', model.predict(x_train[batch][np.newaxis, ...])))
 
+    
+    history = model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size,
+                                          validation_data=(x_test, y_test),
+                                          callbacks=[batch_pred_callback])
+                                
+    print("loss: ", history.history)                                    
+    
     # pred = model.predict(x_test[0])
     # print(pred.shape)
 
-    num_test_examples = 1000
-    x_test = x_test[:num_test_examples, ...]
-    y_test = y_test[:num_test_examples]
     preds = []
     for i in range(x_test.shape[0]):
         if (i + 1) % 100 == 0:
