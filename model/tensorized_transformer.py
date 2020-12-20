@@ -1,4 +1,6 @@
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+from debugging_tools import *
 
 import numpy as np
 import tensorflow as tf
@@ -258,8 +260,7 @@ if __name__ == '__main__':
     x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
     y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
 
-    print(y_test.shape)
-
+    # Hyperparameters:
     epochs=4
     input_length = 24
     d_model = 10
@@ -268,6 +269,8 @@ if __name__ == '__main__':
     batch_size=1
     # loss regularization hyperparameter:
     lambada = 0.1
+    
+    
     input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
     # output_shape = (36, x_train.shape[-1])
     # output_shape = (1, x_train.shape[-1])
