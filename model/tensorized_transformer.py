@@ -88,6 +88,7 @@ class PositionalEncoding(kr.layers.Layer):
             self.angle_dim *= input_shape[-1]
 
         self.model_shape = input_shape
+        self.batch_size = input_shape[0]
 
     def call(self, input_data):
         angle_rads = get_angles(np.arange(self.position)[:, np.newaxis],
@@ -101,8 +102,10 @@ class PositionalEncoding(kr.layers.Layer):
         else:
             new_shape = angle_rads.shape[:-1] + self.model_shape
             angle_rads = np.reshape(angle_rads, new_shape)
-
-        pos_encoding = angle_rads[np.newaxis, ...]
+        
+        pos_encoding = tf.broadcast_to(angle_rads,tf.shape(input_data))
+        pos_encoding = tf.cast(pos_encoding, input_data.dtype)
+                
         return tf.math.add(input_data, pos_encoding)
 
 
@@ -170,18 +173,20 @@ class EncoderLayer(kr.layers.Layer):
 
         d_k = int(self.d_model / self.head_num)
         zs = []
+        batch_size = tf.shape(inputs)[0]
+        
         for i in range(self.head_num):
             index = i * d_k
-            zs.append(self.self_attention(q[..., index:index + d_k],
+            zs.append(self.self_attention(batch_size, q[..., index:index + d_k],
                                           k[..., index:index + d_k],
                                           v[..., index:index + d_k]))
-
         z = tf.concat(zs, axis=-1)
         # z = self.self_attention(q, k, v)
         z = tf.matmul(z, self.wo)
-
+        
         sum = tf.math.add(inputs, z)
-
+        
+        
         norm = self.layer_norm(sum)
 
         # linear
@@ -190,15 +195,18 @@ class EncoderLayer(kr.layers.Layer):
         x = self.dense_hidden(x)
         x = self.dense_out(x)
         out = self.reshape(x)
+
         return out
 
-    def self_attention(self, q, k, v, mask=None):
+    def self_attention(self, batch_size, q, k, v, mask=None):
         """
         Calculates self attention:
         """
-        qe = tf.broadcast_to(q, (q.shape[-3], q.shape[-3], q.shape[-2], q.shape[-1]))
+        q = tf.expand_dims(q, 1)
+        qe = tf.broadcast_to(q, (batch_size, q.shape[-3], q.shape[-3], q.shape[-2], q.shape[-1]))
         kt = tf.transpose(k, perm=(0, 1, 3, 2))
-        kt = tf.broadcast_to(kt, (kt.shape[-3], kt.shape[-3], kt.shape[-2], kt.shape[-1]))
+        kt = tf.expand_dims(kt, 1)
+        kt = tf.broadcast_to(kt, (batch_size, kt.shape[-3], kt.shape[-3], kt.shape[-2], kt.shape[-1]))
         z = tf.matmul(qe, kt)
 
         dk = tf.cast(tf.shape(k)[-1], tf.float32)
@@ -209,12 +217,14 @@ class EncoderLayer(kr.layers.Layer):
         se = tf.nn.softmax(z, axis=-1)
         se = tf.expand_dims(se, -1)
         se = tf.expand_dims(se, -1)
+        
+        v = tf.expand_dims(v, 1)
+        ve = tf.broadcast_to(v, (batch_size, v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]))
+        se = tf.broadcast_to(se, (batch_size, v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]))
 
-        ve = tf.broadcast_to(v, [v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]])
-        se = tf.broadcast_to(se, (v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]))
         # z = tf.matmul(se, v)
         z = tf.multiply(se, ve)
-        z = tf.reduce_sum(z, axis=1)
+        z = tf.reduce_sum(z, axis=2)
 
         return z
 
@@ -266,7 +276,7 @@ if __name__ == '__main__':
     d_model = 10
     head_num = 2
     dense_units = 64
-    batch_size=1
+    batch_size = 3
     # loss regularization hyperparameter:
     lambada = 0.1
     
@@ -286,13 +296,13 @@ if __name__ == '__main__':
         kr.Input(input_shape),
         PositionalEncoding(broadcast=True),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
     ])
     model.summary()
-    model.compile(optimizer='sgd', loss='mse', metrics=['mae'])
+    model.compile(optimizer='adam', loss='mse', metrics=['mae'])
     # model.compile(optimizer='adam', loss=custom_loss_function(lambada), metrics=['mae'])
 
     num_examples = 1000
@@ -303,13 +313,14 @@ if __name__ == '__main__':
     x_test = x_test[:num_test_examples, ...]
     y_test = y_test[:num_test_examples]
     
+    
     # To check if correct parameters are sent to loss function:
-    batch_pred_callback = LambdaCallback(on_batch_end=lambda batch,logs: print(' - pred: ', model.predict(x_train[batch][np.newaxis, ...])))
+    # batch_pred_callback = LambdaCallback(on_batch_end=lambda batch,logs: print(' - pred: ', model.predict(x_train[batch][np.newaxis, ...])))
 
     
     history = model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size,
-                                          validation_data=(x_test, y_test),
-                                          callbacks=[batch_pred_callback])
+                                          validation_data=(x_test, y_test))#,
+                                          #callbacks=[batch_pred_callback])
                                 
     print("loss: ", history.history)                                    
     
