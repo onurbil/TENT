@@ -9,8 +9,9 @@ import tensorflow.keras as kr
 import dataset_tools.split
 import attention.self_attention
 import common.paths
-from visualization_tools.visualization import visualize_pos_encoding
+from visualization_tools.visualization import visualize_pos_encoding, attention_plotter
 from keras.callbacks import LambdaCallback
+
 
       
 # class SelfAttentionLayer(kr.layers.Layer):
@@ -126,7 +127,7 @@ class EncoderLayer(kr.layers.Layer):
         self.d_model = d_model
         self.head_num = head_num
         self.initializer = tf.keras.initializers.get(initializer)
-
+        
         self.wq = None
         self.wk = None
         self.wv = None
@@ -136,6 +137,7 @@ class EncoderLayer(kr.layers.Layer):
         self.dense_hidden = tf.keras.layers.Dense(dense_units, activation='relu')
         self.dense_out: tf.keras.layers.Dense = None
         self.reshape: tf.keras.layers.Reshape = None
+        
 
     def build(self, input_shape):
         self.z_all = tf.zeros([input_shape[-2], input_shape[-1], 0])
@@ -165,8 +167,11 @@ class EncoderLayer(kr.layers.Layer):
         )
         self.dense_out = tf.keras.layers.Dense(tf.reduce_prod(input_shape[-3:]), activation='relu')
         self.reshape = tf.keras.layers.Reshape(input_shape[-3:])
+        
+        self.attention_weights = tf.Variable(initial_value=tf.zeros((0,self.input_length, self.input_length)), trainable=False)
 
     def call(self, inputs):
+
         q = tf.matmul(inputs, self.wq)
         k = tf.matmul(inputs, self.wk)
         v = tf.matmul(inputs, self.wv)
@@ -216,7 +221,11 @@ class EncoderLayer(kr.layers.Layer):
         if mask is not None:
             z += (mask * -1e9)
         z = tf.reduce_sum(z, axis=[-1, -2])
+        
         se = tf.nn.softmax(z, axis=-1)
+        # Attention weights to plot:
+        self.attention_weights.assign(se)
+                        
         se = tf.expand_dims(se, -1)
         se = tf.expand_dims(se, -1)
         
@@ -284,7 +293,7 @@ if __name__ == '__main__':
     print(f'x_test.shape: {x_test.shape}')
 
     # Parameters:
-    epoch = 20
+    epoch = 5
     learning_rate = 0.001
     d_model = 10
     head_num = 1
@@ -326,11 +335,17 @@ if __name__ == '__main__':
     y_test = y_test[:num_test_examples]
 
     # print_weights = kr.callbacks.LambdaCallback(on_epoch_end=lambda batch, logs: print(model.layers[1].get_weights()[0]))
-    model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, validation_data=(x_test,y_test))
+    print_attention_weights = kr.callbacks.LambdaCallback(on_train_end=lambda batch: print(model.layers[1].attention_weights))
 
+    model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, callbacks=[print_attention_weights])
+    # model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, validation_data=(x_test,y_test), callbacks=[print_attention_weights])
+
+    # print(model.layers[1].attention_weights)
+    labels = np.arange(model.layers[1].attention_weights.shape[1]).tolist()
+    print(tf.shape(model.layers[1].attention_weights))
+    # attention_plotter(model.layers[1].attention_weights[5], labels)
+    
     # pred = model.predict(x_test[0])
-    # print(pred.shape)
-
 
     preds = []
     for i in range(x_test.shape[0]):
@@ -341,8 +356,9 @@ if __name__ == '__main__':
     mse = np.mean(kr.metrics.mse(y_test, pred))
     mae = np.mean(kr.metrics.mae(y_test, pred))
     print(f'mse: {mse}, mae: {mae}')
-    print(pred.flatten())
-    print(model.layers[1].get_weights()[0])
+    # print(pred.flatten())
+    # print(model.layers[1].get_weights()[0])
+
 
     import matplotlib.pyplot as plt
     
