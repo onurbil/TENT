@@ -184,9 +184,8 @@ class EncoderLayer(kr.layers.Layer):
         # z = self.self_attention(q, k, v)
         z = tf.matmul(z, self.wo)
         
+        # 1. Residual:
         sum = tf.math.add(inputs, z)
-        
-        
         norm = self.layer_norm(sum)
 
         # linear
@@ -195,6 +194,9 @@ class EncoderLayer(kr.layers.Layer):
         x = self.dense_hidden(x)
         x = self.dense_out(x)
         out = self.reshape(x)
+        # 2. Residual:
+        sum = tf.math.add(norm, out)
+        out = self.layer_norm(sum)
 
         return out
 
@@ -258,11 +260,19 @@ if __name__ == '__main__':
     file_path = os.path.join(common.paths.PROCESSED_DATASET_DIR, filename)
     dataset = np.load(file_path, allow_pickle=True)
 
+
+
+
+
+
+
+
     # Get x_train, y_train, x_test, y_test:
     input_length = 24
+    lag = 4
     train, test = dataset_tools.split.split_train_test(dataset)
-    x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length)
-    x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length)
+    x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, lag=lag)
+    x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, lag=lag)
 
     x_train = x_train.astype('float32')
     x_train = tf.reshape(x_train, (x_train.shape[0], x_train.shape[1], dataset.shape[1], dataset.shape[2]))
@@ -270,23 +280,22 @@ if __name__ == '__main__':
     x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
     y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
 
-    # Hyperparameters:
-    epochs=4
-    input_length = 24
+    print(f'x_train.shape: {x_train.shape}')
+    print(f'x_test.shape: {x_test.shape}')
+
+    # Parameters:
+    epoch = 20
+    learning_rate = 0.001
     d_model = 10
-    head_num = 2
+    head_num = 1
     dense_units = 64
-    batch_size = 64
-    # loss regularization hyperparameter:
-    lambada = 0.1
-    
-    
+    batch_size = 256
     input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
     # output_shape = (36, x_train.shape[-1])
     # output_shape = (1, x_train.shape[-1])
     output_shape = (1, 1)
-    y_train = y_train[..., 0, 5]
-    y_test = y_test[..., 0, 5]
+    y_train = y_train[..., 0, 2]
+    y_test = y_test[..., 0, 2]
     initializer = 'RandomNormal'
 
     # x_train = np.zeros((1,) + input_shape)
@@ -297,42 +306,31 @@ if __name__ == '__main__':
         PositionalEncoding(broadcast=True),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
         # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
     ])
-    model.summary()
-    model.compile(optimizer='adam', loss='mse', metrics=['mae'])
-    # model.compile(optimizer='adam', loss=custom_loss_function(lambada), metrics=['mae'])
 
-    num_examples = 5000
+    model.summary()
+    # model.compile(optimizer='sgd', loss='mse', metrics=['mae'])
+    model.compile(optimizer=kr.optimizers.Adam(learning_rate=learning_rate), loss='mse', metrics=['mae'])
+
+
+    num_examples = 1000
     x_train = x_train[:num_examples]
     y_train = y_train[:num_examples]
-    
+
     num_test_examples = 100
     x_test = x_test[:num_test_examples, ...]
     y_test = y_test[:num_test_examples]
-    
-    # num_examples = 5000 
-    # num_valid_examples = 1000 
-    # x_valid = x_train[-num_examples - num_valid_examples:-num_examples, ...] 
-    # y_valid = y_train[-num_examples - num_valid_examples:-num_examples] 
-    # x_train = x_train[-num_examples:] 
-    # y_train = y_train[-num_examples:]     
-    
-    
-    # To check if correct parameters are sent to loss function:
-    # batch_pred_callback = LambdaCallback(on_batch_end=lambda batch,logs: print(' - pred: ', model.predict(x_train[batch][np.newaxis, ...])))
 
-    
-    history = model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size,
-                                          validation_data=(x_test, y_test))#,
-                                          #callbacks=[batch_pred_callback])
-                                
-    print("loss: ", history.history)                                    
-    
+    # print_weights = kr.callbacks.LambdaCallback(on_epoch_end=lambda batch, logs: print(model.layers[1].get_weights()[0]))
+    model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, validation_data=(x_test,y_test))
+
     # pred = model.predict(x_test[0])
     # print(pred.shape)
+
 
     preds = []
     for i in range(x_test.shape[0]):
@@ -343,3 +341,15 @@ if __name__ == '__main__':
     mse = np.mean(kr.metrics.mse(y_test, pred))
     mae = np.mean(kr.metrics.mae(y_test, pred))
     print(f'mse: {mse}, mae: {mae}')
+    print(pred.flatten())
+    print(model.layers[1].get_weights()[0])
+
+    import matplotlib.pyplot as plt
+    
+    print(pred.flatten().shape)
+    print(y_test.shape)
+    
+    plt.plot(range(pred.size), pred.flatten(), label='pred')
+    plt.plot(range(len(y_test)), y_test, label='true')
+    plt.legend()
+    plt.show()

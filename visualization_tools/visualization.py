@@ -27,7 +27,7 @@ def attention_plotter(attention_weights, y_labels, save=False):
     Visualization for attention weights for each input:
     Inputs:
     attention_weights: Numpy array with shape (batch,number of attention heads)
-    y_labels: Labels of y-axis (here: daily hours) in alist with batch length.
+    y_labels: Labels of y-axis (here: daily hours) in a list with batch length.
     """
     assert(attention_weights.shape[0]==len(y_labels)
            ), 'Attention weight has size {} and labels has size {}!'.format(
