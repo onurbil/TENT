@@ -324,9 +324,9 @@ if __name__ == '__main__':
     print(f'x_test.shape: {x_test.shape}')
 
     # Parameters:
-    epoch = 20
+    epoch = 10
     learning_rate = 0.001
-    d_model = 1
+    d_model = 6
     head_num = 1
     dense_units = 64
     batch_size = 64
@@ -368,7 +368,7 @@ if __name__ == '__main__':
     # print_weights = kr.callbacks.LambdaCallback(on_epoch_end=lambda batch, logs: print(model.layers[1].get_weights()[0]))
     print_attention_weights = kr.callbacks.LambdaCallback(on_train_end=lambda batch: print(model.layers[1].attention_weights))
 
-    model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, callbacks=[print_attention_weights])
+    model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, validation_data=(x_test,y_test), callbacks=[print_attention_weights])
     # model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, validation_data=(x_test,y_test), callbacks=[print_attention_weights])
 
     # print(model.layers[1].attention_weights)
