@@ -209,13 +209,44 @@ class EncoderLayer(kr.layers.Layer):
         """
         Calculates self attention:
         """
-        q = tf.expand_dims(q, 1)
-        qe = tf.broadcast_to(q, (batch_size, q.shape[-3], q.shape[-3], q.shape[-2], q.shape[-1]))
-        kt = tf.transpose(k, perm=(0, 1, 3, 2))
-        kt = tf.expand_dims(kt, 1)
-        kt = tf.broadcast_to(kt, (batch_size, kt.shape[-3], kt.shape[-3], kt.shape[-2], kt.shape[-1]))
-        z = tf.matmul(qe, kt)
+        # q = tf.expand_dims(q, 1)
+        # qe = tf.broadcast_to(q, (batch_size, q.shape[-3], q.shape[-3], q.shape[-2], q.shape[-1]))
+        # kt = tf.transpose(k, perm=(0, 1, 3, 2))
+        # kt = tf.expand_dims(kt, 1)
+        # kt = tf.broadcast_to(kt, (batch_size, kt.shape[-3], kt.shape[-3], kt.shape[-2], kt.shape[-1]))
+        # z = tf.matmul(qe, kt)
 
+        kt = tf.transpose(k, perm=(0, 1, 3, 2))
+        
+        d1 = tf.raw_ops.Empty(shape=(0,q.shape[1], q.shape[1], q.shape[2], q.shape[2]), dtype=q.dtype)
+        for b in range(batch_size):
+            tf.autograph.experimental.set_loop_options(shape_invariants=[(d1, tf.TensorShape((None,q.shape[1], q.shape[1], q.shape[2], q.shape[2])))])
+
+        
+            d2 = tf.raw_ops.Empty(shape=(0,q.shape[1], q.shape[2], q.shape[2]), dtype=q.dtype)
+            for t in range(q.shape[1]):
+                # tf.autograph.experimental.set_loop_options(shape_invariants=[(d2, tf.TensorShape((None,q.shape[1], q.shape[2], q.shape[2]), dtype=q.dtype)))])
+                
+                aa = tf.matmul(q[b,t],kt[b])
+                aa = tf.expand_dims(aa,0)
+                d2 = tf.concat([d2,aa], axis=0)
+                # tf.print(tf.shape(d2))
+            
+            d2 = tf.expand_dims(d2,0) 
+            d1 = tf.concat([d1,d2], axis=0)    
+        
+        # tf.print(d1)
+        
+        z=d1
+        
+        # q = tf.expand_dims(q, 1)
+        # qe = tf.broadcast_to(q, (batch_size, q.shape[-3], q.shape[-3], q.shape[-2], q.shape[-1]))
+        # kt = tf.transpose(k, perm=(0, 1, 3, 2))
+        # kt = tf.expand_dims(kt, 1)
+        # kt = tf.broadcast_to(kt, (batch_size, kt.shape[-3], kt.shape[-3], kt.shape[-2], kt.shape[-1]))
+        # z = tf.matmul(qe, kt)
+        
+        
         dk = tf.cast(tf.shape(k)[-1], tf.float32)
         z = z / tf.math.sqrt(dk)
         if mask is not None:
@@ -293,12 +324,12 @@ if __name__ == '__main__':
     print(f'x_test.shape: {x_test.shape}')
 
     # Parameters:
-    epoch = 5
+    epoch = 20
     learning_rate = 0.001
-    d_model = 10
+    d_model = 1
     head_num = 1
     dense_units = 64
-    batch_size = 256
+    batch_size = 64
     input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
     # output_shape = (36, x_train.shape[-1])
     # output_shape = (1, x_train.shape[-1])
@@ -343,7 +374,7 @@ if __name__ == '__main__':
     # print(model.layers[1].attention_weights)
     labels = np.arange(model.layers[1].attention_weights.shape[1]).tolist()
     print(tf.shape(model.layers[1].attention_weights))
-    # attention_plotter(model.layers[1].attention_weights[5], labels)
+    attention_plotter(model.layers[1].attention_weights[5], labels)
     
     # pred = model.predict(x_test[0])
 
