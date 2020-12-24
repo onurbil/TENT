@@ -252,8 +252,13 @@ class EncoderLayer(kr.layers.Layer):
         if mask is not None:
             z += (mask * -1e9)
         z = tf.reduce_sum(z, axis=[-1, -2])
-        
+
+        z_shape = tf.shape(z)
+        z = tf.reshape(z, [z_shape[0],-1])
+        # Softmax over all measurements:
         se = tf.nn.softmax(z, axis=-1)
+        se = tf.reshape(se, [z_shape[0],z_shape[1],z_shape[2]])
+
         # Attention weights to plot:
         self.attention_weights.assign(se)
                         
