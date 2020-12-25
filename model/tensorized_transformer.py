@@ -277,13 +277,9 @@ class EncoderLayer(kr.layers.Layer):
 
 def custom_loss_function(lambada):
     
-    # print(model.predict(x_train[batch][np.newaxis, ...]))
-    # tf.print(previous_pred[0])
-    # tf.print(lambada)
-    
     def mse_loss_function(y_true, y_pred):
-
-        loss = tf.keras.backend.mean(tf.math.reduce_sum(tf.square(y_true-y_pred))) #+ lambada * (y_pred-previous_pred)            
+        
+        loss = tf.math.reduce_mean(tf.square(y_true-y_pred)) + lambada * tf.square(tf.math.reduce_mean(y_true-y_pred))   
         return loss
     
     return mse_loss_function
