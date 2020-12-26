@@ -118,10 +118,6 @@ class EncoderLayer(kr.layers.Layer):
         k = tf.squeeze(tf.matmul(inputs, self.wk), -2)
         v = tf.squeeze(tf.matmul(inputs, self.wv), -2)
         inputs = tf.squeeze(inputs, -2)
-        # print(inputs.shape)
-        # print(self.wq.shape)
-        # print(q.shape)
-        # d_k = int(self.d_model / self.head_num)
         zs = []
         batch_size = tf.shape(inputs)[0]
 
@@ -139,7 +135,6 @@ class EncoderLayer(kr.layers.Layer):
         norm = self.layer_norm(sum)
 
         # linear
-
         x = self.flatten(norm)
         x = self.dense_hidden(x)
         x = self.dense_out(x)
@@ -172,7 +167,7 @@ class EncoderLayer(kr.layers.Layer):
         se = tf.nn.softmax(z, axis=-1)
 
         # Attention weights to plot:
-        self.attention_weights.assign(value=se)
+        #self.attention_weights.assign(value=se)
 
         se = tf.expand_dims(se, -1)
         se = tf.expand_dims(se, -1)
@@ -225,7 +220,7 @@ if __name__ == '__main__':
     epoch = 2
     learning_rate = 0.001
     head_num = 2
-    d_model = head_num * 2
+    d_model = 4
     dense_units = 64
     batch_size = 64
     input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
@@ -240,9 +235,9 @@ if __name__ == '__main__':
         kr.Input(shape=input_shape),
         PositionalEncoding(broadcast=True),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
@@ -251,7 +246,7 @@ if __name__ == '__main__':
     model.summary()
     model.compile(optimizer=kr.optimizers.Adam(learning_rate=learning_rate), loss='mse', metrics=['mae'])
 
-    num_examples = 10000
+    num_examples = 1000
     x_train = x_train[:num_examples]
     y_train = y_train[:num_examples]
 
@@ -277,11 +272,10 @@ if __name__ == '__main__':
     mae = np.mean(kr.metrics.mae(y_test, pred))
     print(f'mse: {mse}, mae: {mae}')
 
-
-
     print(pred.flatten().shape)
     print(y_test.shape)
 
+    plt.figure(figsize=(14, 8))
     plt.plot(range(pred.size), pred.flatten(), label='pred')
     plt.plot(range(len(y_test)), y_test, label='true')
     plt.legend()
