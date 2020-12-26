@@ -110,6 +110,7 @@ class EncoderLayer(kr.layers.Layer):
 
         self.attention_weights = tf.Variable(initial_value=tf.zeros((0, self.input_length, self.input_length)),
                                              trainable=False)
+        self.d_k = int(self.d_model / self.head_num)
 
     def call(self, inputs):
         inputs = tf.expand_dims(inputs, -2)
@@ -120,15 +121,15 @@ class EncoderLayer(kr.layers.Layer):
         # print(inputs.shape)
         # print(self.wq.shape)
         # print(q.shape)
-        d_k = int(self.d_model / self.head_num)
+        # d_k = int(self.d_model / self.head_num)
         zs = []
         batch_size = tf.shape(inputs)[0]
 
         for i in range(self.head_num):
-            index = i * d_k
-            zs.append(self.self_attention(batch_size, q[..., index:index + d_k],
-                                          k[..., index:index + d_k],
-                                          v[..., index:index + d_k]))
+            index = i * self.d_k
+            zs.append(self.self_attention(batch_size, q[..., index:index + self.d_k],
+                                          k[..., index:index + self.d_k],
+                                          v[..., index:index + self.d_k]))
         z = tf.concat(zs, axis=-1)
         # z = self.self_attention(q, k, v)
         z = tf.matmul(z, self.wo)
