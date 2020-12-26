@@ -221,10 +221,10 @@ if __name__ == '__main__':
     print(f'x_test.shape: {x_test.shape}')
 
     # Parameters:
-    epoch = 300
+    epoch = 2
     learning_rate = 0.001
-    head_num = 1
-    d_model = head_num * 36
+    head_num = 2
+    d_model = head_num * 2
     dense_units = 64
     batch_size = 64
     input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])

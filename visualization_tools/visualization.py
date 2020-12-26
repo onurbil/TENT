@@ -33,7 +33,7 @@ def attention_plotter(attention_weights, y_labels, save=False):
            ), 'Attention weight has size {} and labels has size {}!'.format(
            attention_weights.shape[0], len(y_labels))
     # Get for each column the cell with maximal attention:
-    max_attention = np.argmax(attention_weights, axis=0)
+    max_attention = np.argmax(attention_weights, axis=1)
         
     ax = sns.heatmap(attention_weights, annot=True, cmap='Blues')
     ax.set(xlabel='Attention Heads', ylabel='Dates',
@@ -42,8 +42,8 @@ def attention_plotter(attention_weights, y_labels, save=False):
     ax.set_ylim(bottom + 0.5, top - 0.5)
     ax.set_yticklabels(y_labels, rotation=0)
     # Draw rectangle around the cell with maximum attention:
-    for col, variable in enumerate(max_attention):
-        ax.add_patch(Rectangle((col,variable),1,1,
+    for row, variable in enumerate(max_attention):
+        ax.add_patch(Rectangle((variable,row),1,1,
                      fill=False, edgecolor='red', lw=3))
     plt.show()
     if save:
