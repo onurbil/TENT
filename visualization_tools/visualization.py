@@ -36,7 +36,7 @@ def attention_plotter(attention_weights, y_labels, save=False):
     max_attention = np.argmax(attention_weights, axis=1)
         
     ax = sns.heatmap(attention_weights, annot=True, cmap='Blues')
-    ax.set(xlabel='Attention Heads', ylabel='Dates',
+    ax.set(xlabel='Time steps', ylabel='Time steps',
            title='Visualization of Attention Weights')
     bottom, top = ax.get_ylim()
     ax.set_ylim(bottom + 0.5, top - 0.5)
