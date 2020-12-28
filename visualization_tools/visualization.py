@@ -7,6 +7,7 @@ import datetime
 from tensorflow.keras.callbacks import TensorBoard
 import seaborn as sns
 from matplotlib.patches import Rectangle
+from matplotlib import cm
 from debugging_tools import *
 
 def visualize_pos_encoding(array):
@@ -50,6 +51,48 @@ def attention_plotter(attention_weights, y_labels, save=False):
         fig = ax.get_figure()
         fig.savefig("Attention Visualization.png")
 
+
+def attention_3d_plotter(array, x_labels, save=False):
+
+    assert array.shape[0] == array.shape[1]
+    time_length = array.shape[0]
+    cities = array.shape[2]
+    
+    array = array.reshape((cities,time_length,time_length)) 
+
+    x_axis = np.arange(1,cities+1).reshape(cities,1)
+    y_axis = np.arange(1,time_length+1)
+    z_axis = np.arange(1,time_length+1)
+
+    grid_x = x_axis * np.ones((1,time_length))
+    grid_y = y_axis * np.ones((cities,1))
+
+    scam = plt.cm.ScalarMappable(norm=cm.colors.Normalize(0,1),cmap='jet')
+    fig = plt.figure()
+    ax  = fig.gca(projection='3d')
+    ax.set_xlim(1,5, auto=True)
+    ax.set_xticklabels(city_labels, rotation=0)
+
+    for i in range(time_length):
+        
+        grid_z = np.ones((cities,time_length)) * (i+1)
+        scam.set_array([])  
+        surf = ax.plot_surface(grid_x, grid_y, grid_z,
+            facecolors  = scam.to_rgba(array[:,i,:]), 
+            antialiased = True,
+            rstride=1, cstride=1, alpha=None)
+            
+    fig.colorbar(scam, shrink=0.5, aspect=5)
+    plt.show()
+    if save:
+        fig = ax.get_figure()
+        fig.savefig("Attention Visualization 3D.png")
+
+
+
+# test_array = np.random.rand(8,8,4)
+# city_labels = ['a','b','c','d']
+# attention_3d_plotter(test_array, city_labels)
     
 
 # To call tensorboard:
