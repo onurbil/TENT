@@ -52,30 +52,41 @@ def attention_plotter(attention_weights, y_labels, save=False):
         fig.savefig("Attention Visualization.png")
 
 
-def attention_3d_plotter(array, x_labels, save=False):
+def attention_3d_plotter(array, x_labels):
 
     assert array.shape[0] == array.shape[1]
+    assert array.shape[2] == len(x_labels)
     time_length = array.shape[0]
     cities = array.shape[2]
     
     array = array.reshape((cities,time_length,time_length)) 
 
-    x_axis = np.arange(1,cities+1).reshape(cities,1)
-    y_axis = np.arange(1,time_length+1)
-    z_axis = np.arange(1,time_length+1)
+    x_axis = np.arange(0,cities+1).reshape(cities+1,1)
+    y_axis = np.arange(0,time_length+1)
+    z_axis = np.arange(0,time_length+1)
 
-    grid_x = x_axis * np.ones((1,time_length))
-    grid_y = y_axis * np.ones((cities,1))
+    grid_x = x_axis * np.ones((1,time_length+1))
+    grid_y = y_axis * np.ones((cities+1,1))
 
     scam = plt.cm.ScalarMappable(norm=cm.colors.Normalize(0,1),cmap='jet')
     fig = plt.figure()
     ax  = fig.gca(projection='3d')
-    ax.set_xlim(1,5, auto=True)
-    ax.set_xticklabels(city_labels, rotation=0)
 
-    for i in range(time_length):
+    plt.xticks(np.arange(cities)+0.5)
+    plt.yticks(np.arange(time_length)+0.5)
         
-        grid_z = np.ones((cities,time_length)) * (i+1)
+    ax.set_zticks(np.arange(time_length+1))
+    ax.set_xticklabels(city_labels, rotation=90)
+    ax.set_yticklabels(np.arange(1,time_length+1))
+    ax.set_zticklabels(np.arange(1,time_length+1))
+    for label in ax.get_yticklabels()[::2]:
+        label.set_visible(False)
+    for label in ax.get_zticklabels()[::2]:
+        label.set_visible(False)
+    
+    for i in range(time_length):
+        grid_z = np.ones((cities+1,time_length+1)) * i
+        
         scam.set_array([])  
         surf = ax.plot_surface(grid_x, grid_y, grid_z,
             facecolors  = scam.to_rgba(array[:,i,:]), 
@@ -83,27 +94,40 @@ def attention_3d_plotter(array, x_labels, save=False):
             rstride=1, cstride=1, alpha=None)
             
     fig.colorbar(scam, shrink=0.5, aspect=5)
+    
+    """                                                               
+    Scaling is done from here...                                                                                                                           
+    """
+    # x_scale=1
+    # y_scale=2
+    # z_scale=4
+    # scale=np.diag([x_scale, y_scale, z_scale, 1.0])
+    # scale=scale*(1.0/scale.max())
+    # print(scale)
+    # scale[3,3]=1
+    # 
+    # def short_proj():
+    #   return np.dot(Axes3D.get_proj(ax), scale)
+    # 
+    # ax.get_proj=short_proj
+    
     plt.show()
-    
-    if save:
-        fig = ax.get_figure()
-        fig.savefig("Attention Visualization 3D.png")
 
 
 
+city_labels = ['Vancouver', 'Portland', 'San Francisco', 'Seattle', 'Los Angeles', 
+'San Diego', 'Las Vegas', 'Phoenix', 'Albuquerque', 'Denver', 'San Antonio', 
+'Dallas', 'Houston', 'Kansas City', 'Minneapolis', 'Saint Louis', 'Chicago', 
+'Nashville', 'Indianapolis', 'Atlanta', 'Detroit', 'Jacksonville', 'Charlotte', 
+'Miami', 'Pittsburgh', 'Toronto', 'Philadelphia', 'New York', 'Montreal', 
+'Boston', 'Beersheba', 'Tel Aviv District', 'Eilat', 'Haifa', 'Nahariyya', 
+'Jerusalem']
 
-# cities = ['Vancouver', 'Portland', 'San Francisco', 'Seattle', 'Los Angeles', 
-# 'San Diego', 'Las Vegas', 'Phoenix', 'Albuquerque', 'Denver', 'San Antonio', 
-# 'Dallas', 'Houston', 'Kansas City', 'Minneapolis', 'Saint Louis', 'Chicago', 
-# 'Nashville', 'Indianapolis', 'Atlanta', 'Detroit', 'Jacksonville', 'Charlotte', 
-# 'Miami', 'Pittsburgh', 'Toronto', 'Philadelphia', 'New York', 'Montreal', 
-# 'Boston', 'Beersheba', 'Tel Aviv District', 'Eilat', 'Haifa', 'Nahariyya', 
-# 'Jerusalem']
-
-# test_array = np.random.rand(8,8,4)
 # city_labels = ['a','b','c','d']
-# attention_3d_plotter(test_array, city_labels)
-    
+test_array = np.random.rand(24,24,36)
+
+attention_3d_plotter(test_array, city_labels)
+
 
 # To call tensorboard:
 #tensorboard --logdir=/notebooks/tensorized_transformers/vanilla_transformer/tb_logs --bind_all
