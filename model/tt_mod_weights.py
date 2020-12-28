@@ -80,7 +80,7 @@ class EncoderLayer(kr.layers.Layer):
 
     def build(self, input_shape):
         self.inp_shape = input_shape
-        print(input_shape)
+        # print(input_shape)
 
         self.z_all = tf.zeros([input_shape[-2], input_shape[-1], 0])
         self.wq = self.add_weight(
@@ -208,7 +208,7 @@ if __name__ == '__main__':
     dataset = np.load(file_path, allow_pickle=True)
     print(dataset.shape)
 
-    input_length = 4
+    input_length = 16
     lag = 4
     train, test = dataset_tools.split.split_train_test(dataset)
     x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, lag=lag)
@@ -234,11 +234,11 @@ if __name__ == '__main__':
     print(f'x_test.shape: {x_test.shape}')
 
     # Parameters:
-    epoch = 10
+    epoch = 100
     learning_rate = 0.001
-    head_num = 4
-    d_model = 8
-    dense_units = 32
+    head_num = 16
+    d_model =32
+    dense_units = 64
     batch_size = 64
     input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
     output_shape = (1, 1)
@@ -252,9 +252,11 @@ if __name__ == '__main__':
         kr.Input(shape=input_shape),
         PositionalEncoding(broadcast=True),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
@@ -263,23 +265,26 @@ if __name__ == '__main__':
     model.summary()
     model.compile(optimizer=kr.optimizers.Adam(learning_rate=learning_rate), loss='mse', metrics=['mae'])
 
-    num_examples = 1000
-    x_train = x_train[:num_examples]
-    y_train = y_train[:num_examples]
+    num_examples = 10000
+    # x_train = x_train[:num_examples]
+    # y_train = y_train[:num_examples]
 
-    num_test_examples = 1000
-    x_test = x_test[:num_test_examples, ...]
-    y_test = y_test[:num_test_examples]
+    num_test_examples = 100
+    # x_test = x_test[:num_test_examples, ...]
+    # y_test = y_test[:num_test_examples]
 
     print_attention_weights = kr.callbacks.LambdaCallback(
         on_train_end=lambda batch: print(model.layers[1].attention_weights))
 
-    model.fit(x_train, y_train,
-              epochs=epoch,
-              batch_size=batch_size,
-              validation_data=(x_test, y_test),
-              callbacks=[print_attention_weights]
-              )
+    model.fit(
+        # x_train, y_train,
+        x_train[:num_examples], y_train[:num_examples],
+        epochs=epoch,
+        batch_size=batch_size,
+        # validation_data=(x_test, y_test),
+        validation_data = (x_test[:num_test_examples, ...], y_test[:num_test_examples]),
+        callbacks=[print_attention_weights]
+    )
 
     pred = model.predict(x_test[0:10])
 
