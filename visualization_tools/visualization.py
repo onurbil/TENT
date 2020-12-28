@@ -84,11 +84,21 @@ def attention_3d_plotter(array, x_labels, save=False):
             
     fig.colorbar(scam, shrink=0.5, aspect=5)
     plt.show()
+    
     if save:
         fig = ax.get_figure()
         fig.savefig("Attention Visualization 3D.png")
 
 
+
+
+# cities = ['Vancouver', 'Portland', 'San Francisco', 'Seattle', 'Los Angeles', 
+# 'San Diego', 'Las Vegas', 'Phoenix', 'Albuquerque', 'Denver', 'San Antonio', 
+# 'Dallas', 'Houston', 'Kansas City', 'Minneapolis', 'Saint Louis', 'Chicago', 
+# 'Nashville', 'Indianapolis', 'Atlanta', 'Detroit', 'Jacksonville', 'Charlotte', 
+# 'Miami', 'Pittsburgh', 'Toronto', 'Philadelphia', 'New York', 'Montreal', 
+# 'Boston', 'Beersheba', 'Tel Aviv District', 'Eilat', 'Haifa', 'Nahariyya', 
+# 'Jerusalem']
 
 # test_array = np.random.rand(8,8,4)
 # city_labels = ['a','b','c','d']
