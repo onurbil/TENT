@@ -68,7 +68,7 @@ def attention_3d_plotter(array, x_labels):
     grid_x = x_axis * np.ones((1,time_length+1))
     grid_y = y_axis * np.ones((cities+1,1))
 
-    scam = plt.cm.ScalarMappable(norm=cm.colors.Normalize(0,1),cmap='jet')
+    scam = plt.cm.ScalarMappable(norm=cm.colors.Normalize(0,1),cmap='Blues')
     fig = plt.figure()
     ax  = fig.gca(projection='3d')
 
@@ -79,6 +79,7 @@ def attention_3d_plotter(array, x_labels):
     ax.set_xticklabels(city_labels, rotation=90)
     ax.set_yticklabels(np.arange(1,time_length+1))
     ax.set_zticklabels(np.arange(1,time_length+1))
+    
     for label in ax.get_yticklabels()[::2]:
         label.set_visible(False)
     for label in ax.get_zticklabels()[::2]:
@@ -90,17 +91,17 @@ def attention_3d_plotter(array, x_labels):
         scam.set_array([])  
         surf = ax.plot_surface(grid_x, grid_y, grid_z,
             facecolors  = scam.to_rgba(array[:,i,:]), 
-            antialiased = True,
+            antialiased = True, cmap='Blues',
             rstride=1, cstride=1, alpha=None)
             
     fig.colorbar(scam, shrink=0.5, aspect=5)
     
-    """                                                               
-    Scaling is done from here...                                                                                                                           
-    """
-    # x_scale=1
-    # y_scale=2
-    # z_scale=4
+    # """                                                               
+    # Scaling is done from here...                                                                                                                           
+    # """
+    # x_scale=2
+    # y_scale=3
+    # z_scale=5
     # scale=np.diag([x_scale, y_scale, z_scale, 1.0])
     # scale=scale*(1.0/scale.max())
     # print(scale)
