@@ -11,6 +11,9 @@ from matplotlib import cm
 from common.variables import city_labels
 from debugging_tools import *
 
+# from mpl_toolkits.mplot3d import Axes3D
+
+
 def visualize_pos_encoding(array):
     """
     Plot heatmap of positional encoding for the array.
@@ -72,7 +75,7 @@ def attention_3d_plotter(array, x_labels):
     # scam = plt.cm.ScalarMappable(norm=cm.colors.Normalize(0,1),cmap='Blues')
     scam = plt.cm.ScalarMappable(norm=cm.colors.Normalize(array.min(),array.max()),cmap='Blues')
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(5,10))
     ax  = fig.gca(projection='3d')
 
     plt.xticks(np.arange(cities)+0.5)

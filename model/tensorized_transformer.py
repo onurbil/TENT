@@ -411,15 +411,14 @@ if __name__ == '__main__':
     labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
     
     # labels = np.arange(36*input_length).tolist()
-    
     print(tf.shape(model.layers[1].attention_weights))
-    
+        
     if (softmax_type == 1 or softmax_type == 2):
         attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length,-1)), labels)
         # attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
         # attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length,-1)), labels)        
     elif softmax_type == 3:
-        print(model.layers[1].attention_weights[0][3].numpy())
+        # print(model.layers[1].attention_weights[0][3].numpy())
         attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
     else:
         pass
@@ -436,7 +435,7 @@ if __name__ == '__main__':
     mae = np.mean(kr.metrics.mae(y_test, pred))
     print(f'mse: {mse}, mae: {mae}')
     print(pred.flatten())
-    print(model.layers[1].get_weights()[0])
+    # print(model.layers[1].get_weights()[0])
 
 
     import matplotlib.pyplot as plt
