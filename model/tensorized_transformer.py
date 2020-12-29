@@ -394,7 +394,7 @@ if __name__ == '__main__':
     model.compile(optimizer=kr.optimizers.Adam(learning_rate=learning_rate), loss='mse', metrics=['mae'])
 
 
-    num_examples = 1000
+    num_examples = 10000
     x_train = x_train[:num_examples]
     y_train = y_train[:num_examples]
 
@@ -419,8 +419,8 @@ if __name__ == '__main__':
         # attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
         # attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length,-1)), labels)        
     elif softmax_type == 3:
-        print(attention_weights)
-        attention_3d_plotter(model.layers[1].attention_weights[3][0].numpy(), city_labels)
+        print(model.layers[1].attention_weights[0][3].numpy())
+        attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
     else:
         pass
     

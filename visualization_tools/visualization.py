@@ -69,7 +69,9 @@ def attention_3d_plotter(array, x_labels):
     grid_x = x_axis * np.ones((1,time_length+1))
     grid_y = y_axis * np.ones((cities+1,1))
 
-    scam = plt.cm.ScalarMappable(norm=cm.colors.Normalize(0,1),cmap='Blues')
+    # scam = plt.cm.ScalarMappable(norm=cm.colors.Normalize(0,1),cmap='Blues')
+    scam = plt.cm.ScalarMappable(norm=cm.colors.Normalize(array.min(),array.max()),cmap='Blues')
+
     fig = plt.figure()
     ax  = fig.gca(projection='3d')
 
