@@ -8,6 +8,7 @@ from tensorflow.keras.callbacks import TensorBoard
 import seaborn as sns
 from matplotlib.patches import Rectangle
 from matplotlib import cm
+from common.variables import city_labels
 from debugging_tools import *
 
 def visualize_pos_encoding(array):
@@ -115,19 +116,9 @@ def attention_3d_plotter(array, x_labels):
     plt.show()
 
 
-
-city_labels = ['Vancouver', 'Portland', 'San Francisco', 'Seattle', 'Los Angeles', 
-'San Diego', 'Las Vegas', 'Phoenix', 'Albuquerque', 'Denver', 'San Antonio', 
-'Dallas', 'Houston', 'Kansas City', 'Minneapolis', 'Saint Louis', 'Chicago', 
-'Nashville', 'Indianapolis', 'Atlanta', 'Detroit', 'Jacksonville', 'Charlotte', 
-'Miami', 'Pittsburgh', 'Toronto', 'Philadelphia', 'New York', 'Montreal', 
-'Boston', 'Beersheba', 'Tel Aviv District', 'Eilat', 'Haifa', 'Nahariyya', 
-'Jerusalem']
-
 # city_labels = ['a','b','c','d']
-test_array = np.random.rand(24,24,36)
-
-attention_3d_plotter(test_array, city_labels)
+# test_array = np.random.rand(24,24,36)
+# attention_3d_plotter(test_array, city_labels)
 
 
 # To call tensorboard:

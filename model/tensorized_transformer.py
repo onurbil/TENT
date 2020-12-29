@@ -9,7 +9,8 @@ import tensorflow.keras as kr
 import dataset_tools.split
 import attention.self_attention
 import common.paths
-from visualization_tools.visualization import visualize_pos_encoding, attention_plotter
+from visualization_tools.visualization import visualize_pos_encoding, attention_plotter, attention_3d_plotter
+from common.variables import city_labels
 from tensorflow.keras.callbacks import LambdaCallback
 
 
@@ -337,7 +338,7 @@ if __name__ == '__main__':
     dataset = np.load(file_path, allow_pickle=True)
 
     # Get x_train, y_train, x_test, y_test:
-    input_length = 8
+    input_length = 24
     lag = 1
     train, test = dataset_tools.split.split_train_test(dataset)
     x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, lag=lag)
@@ -375,6 +376,7 @@ if __name__ == '__main__':
 
     # x_train = np.zeros((1,) + input_shape)
     # y_train = np.zeros((1,) + input_shape[1:])
+    assert softmax_type in [1,2,3]
 
     model = kr.Sequential([
         kr.Input(input_shape),
@@ -392,7 +394,7 @@ if __name__ == '__main__':
     model.compile(optimizer=kr.optimizers.Adam(learning_rate=learning_rate), loss='mse', metrics=['mae'])
 
 
-    num_examples = 10000
+    num_examples = 1000
     x_train = x_train[:num_examples]
     y_train = y_train[:num_examples]
 
@@ -410,12 +412,17 @@ if __name__ == '__main__':
     
     # labels = np.arange(36*input_length).tolist()
     
-    # print(tf.shape(model.layers[1].attention_weights))
-    attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length,-1)), labels)
-    attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
-    attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length,-1)), labels)
-
-
+    print(tf.shape(model.layers[1].attention_weights))
+    
+    if (softmax_type == 1 or softmax_type == 2):
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length,-1)), labels)
+        # attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
+        # attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length,-1)), labels)        
+    elif softmax_type == 3:
+        print(attention_weights)
+        attention_3d_plotter(model.layers[1].attention_weights[3][0].numpy(), city_labels)
+    else:
+        pass
     
     pred = model.predict(x_test[0])
 
