@@ -155,8 +155,8 @@ class EncoderLayer(kr.layers.Layer):
             aw_list.append(aw)
 
         z = tf.concat(zs, axis=-1)
-        #aww = tf.stack(aw_list, axis=0)
-        self.attention_weights.assign(aww)
+        aww = tf.stack(aw_list, axis=0)
+        #self.attention_weights.assign(aww)
 
         z = tf.matmul(z, self.wo)
 
