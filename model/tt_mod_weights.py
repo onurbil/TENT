@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import dataset_tools.split
 import attention.self_attention
 import common.paths
-from visualization_tools.visualization import visualize_pos_encoding, attention_plotter
+from visualization_tools.visualization import visualize_pos_encoding, attention_plotter, attention_3d_plotter
 from tensorflow.keras.callbacks import LambdaCallback
 
 def get_angles(pos, i, d_model):
@@ -57,6 +57,7 @@ class EncoderLayer(kr.layers.Layer):
                  head_num,
                  dense_units,
                  initializer,
+                 softmax_type,
                  **kwargs):
         super(EncoderLayer, self).__init__(**kwargs)
 
@@ -67,6 +68,7 @@ class EncoderLayer(kr.layers.Layer):
         self.d_model = d_model
         self.head_num = head_num
         self.initializer = tf.keras.initializers.get(initializer)
+        self.softmax_type = softmax_type
 
         self.wq = None
         self.wk = None
@@ -80,7 +82,6 @@ class EncoderLayer(kr.layers.Layer):
 
     def build(self, input_shape):
         self.inp_shape = input_shape
-        # print(input_shape)
 
         self.z_all = tf.zeros([input_shape[-2], input_shape[-1], 0])
         self.wq = self.add_weight(
@@ -110,10 +111,19 @@ class EncoderLayer(kr.layers.Layer):
         self.dense_out = tf.keras.layers.Dense(tf.reduce_prod(input_shape[-3:]), activation='relu')
         self.reshape = tf.keras.layers.Reshape(input_shape[-3:])
 
-        self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(
-            shape=(self.head_num,0,self.input_length, self.input_length),
-            dtype=tf.float32),
-            trainable=False)
+        if self.softmax_type in (1, 2):
+            attention_shape = self.head_num, 0, self.input_length, self.input_length
+
+        if self.softmax_type == 3:
+            attention_shape = (self.head_num, 0, self.input_length, self.input_length, input_shape[-2])
+
+        self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=attention_shape, dtype=tf.float32),
+                                             trainable=False)
+
+        # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(
+        #     shape=(self.head_num,0,self.input_length, self.input_length),
+        #     dtype=tf.float32),
+        #     trainable=False)
         self.d_k = int(self.d_model / self.head_num)
 
     def call(self, inputs):
@@ -132,7 +142,8 @@ class EncoderLayer(kr.layers.Layer):
 
             zz, aw = self.self_attention(batch_size, q[..., index:index + self.d_k],
                                          k[..., index:index + self.d_k],
-                                         v[..., index:index + self.d_k])
+                                         v[..., index:index + self.d_k],
+                                         softmax_type=self.softmax_type)
 
             zs.append(zz)
             aw_list.append(aw)
@@ -158,7 +169,7 @@ class EncoderLayer(kr.layers.Layer):
 
         return out
 
-    def self_attention(self, batch_size, q, k, v, mask=None):
+    def self_attention(self, batch_size, q, k, v, mask=None, softmax_type=1):
         """
         Calculates self attention:
         """
@@ -174,21 +185,42 @@ class EncoderLayer(kr.layers.Layer):
 
         dk = tf.cast(tf.shape(k)[-1], tf.float32)
         z = z / tf.math.sqrt(dk)
-        if mask is not None:
-            z += (mask * -1e9)
-        z = tf.reduce_sum(z, axis=[-1, -2])
 
-        se = tf.nn.softmax(z, axis=-1)
-        # Attention weights to plot:
-        attention_weights = se
+        # if mask is not None:
+        #     z += (mask * -1e9)
 
-        se = tf.expand_dims(se, -1)
+        if softmax_type == 1:
+            z = tf.reduce_sum(z, axis=[-1, -2])
+            se = tf.nn.softmax(z, axis=-1)
+            # Attention weights to plot:
+            attention_weights = se
+            se = tf.expand_dims(se, -1)
+
+
+        elif softmax_type == 2:
+            # Softmax over all measurements:
+            z = tf.reduce_sum(z, axis=[-1, -2])
+            z_shape = tf.shape(z)
+            z = tf.reshape(z, [z_shape[0], -1])
+            se = tf.nn.softmax(z, axis=-1)
+            se = tf.reshape(se, [z_shape[0], z_shape[1], z_shape[2]])
+            # Attention weights to plot:
+            attention_weights = se
+            se = tf.expand_dims(se, -1)
+
+        elif softmax_type == 3:
+            z = tf.reduce_sum(z, axis=-1)
+            se = tf.nn.softmax(z, axis=-1)
+            # Attention weights to plot:
+            attention_weights = se
+
         se = tf.expand_dims(se, -1)
 
         v = tf.expand_dims(v, 1)
         ve = tf.broadcast_to(v, (batch_size, v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]))
         se = tf.broadcast_to(se, (batch_size, v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]))
 
+        # z = tf.matmul(se, v)
         z = tf.multiply(se, ve)
         z = tf.reduce_sum(z, axis=2)
 
@@ -208,8 +240,25 @@ if __name__ == '__main__':
     dataset = np.load(file_path, allow_pickle=True)
     print(dataset.shape)
 
+    """
+    ###### ALL PARAMETERS HERE######:
+    """
+
+    softmax_type = 2
     input_length = 16
     lag = 4
+    epoch = 100
+
+    learning_rate = 0.001
+    head_num = 16
+    d_model = 32
+    dense_units = 64
+    batch_size = 64
+
+    num_examples = 10000
+    num_valid_examples = 500
+    initializer = 'RandomNormal'
+
     train, test = dataset_tools.split.split_train_test(dataset)
     x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, lag=lag)
     x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, lag=lag)
@@ -220,43 +269,31 @@ if __name__ == '__main__':
     x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
     y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
 
+    # Choosing first 29 cities
     x_train = x_train[:, :, :29, :]
     y_train = y_train[:, :29, :]
     x_test = x_test[:, :, :29, :]
     y_test = y_test[:, :29, :]
 
-    # x_train = tf.transpose(x_train, perm=(0, 1, 3, 2))
-    # y_train = tf.transpose(y_train, perm=(0, 2, 1))
-    # x_test = tf.transpose(x_test, perm=(0, 1, 3, 2))
-    # y_test = tf.transpose(y_test, perm=(0, 2, 1))
+    input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
+    output_shape = (1, 1)
+
+    # Choosing temperature as output
+    y_train = y_train[..., 0, 4]
+    y_test = y_test[..., 0, 4]
 
     print(f'x_train.shape: {x_train.shape}')
     print(f'x_test.shape: {x_test.shape}')
 
-    # Parameters:
-    epoch = 100
-    learning_rate = 0.001
-    head_num = 16
-    d_model =32
-    dense_units = 64
-    batch_size = 64
-    input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
-    output_shape = (1, 1)
-    # y_train = y_train[..., 4, 0]
-    # y_test = y_test[..., 4, 0]
-    y_train = y_train[..., 0, 4]
-    y_test = y_test[..., 0, 4]
-    initializer = 'RandomNormal'
-
     model = kr.Sequential([
         kr.Input(shape=input_shape),
         PositionalEncoding(broadcast=True),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
@@ -265,55 +302,68 @@ if __name__ == '__main__':
     model.summary()
     model.compile(optimizer=kr.optimizers.Adam(learning_rate=learning_rate), loss='mse', metrics=['mae'])
 
-    num_examples = 10000
-    # x_train = x_train[:num_examples]
-    # y_train = y_train[:num_examples]
+    x_valid = x_train[-num_examples - num_valid_examples:-num_examples, ...]
+    y_valid = y_train[-num_examples - num_valid_examples:-num_examples]
+    print(f'x_valid.shape: {x_valid.shape}')
 
-    num_test_examples = 100
-    # x_test = x_test[:num_test_examples, ...]
-    # y_test = y_test[:num_test_examples]
+    x_train = x_train[-num_examples:]
+    y_train = y_train[-num_examples:]
 
+    # Callbacks
     print_attention_weights = kr.callbacks.LambdaCallback(
         on_train_end=lambda batch: print(model.layers[1].attention_weights))
+    early_stopping = kr.callbacks.EarlyStopping(patience=10,
+                                                restore_best_weights=True,
+                                                verbose=1)
 
     model.fit(
-        # x_train, y_train,
-        x_train[:num_examples], y_train[:num_examples],
+        x_train, y_train,
         epochs=epoch,
         batch_size=batch_size,
-        # validation_data=(x_test, y_test),
-        validation_data = (x_test[:num_test_examples, ...], y_test[:num_test_examples]),
-        callbacks=[print_attention_weights]
+        validation_data=(x_valid, y_valid),
+        callbacks=[early_stopping]
     )
 
     pred = model.predict(x_test[0:10])
-
-    labels = np.arange(model.layers[1].attention_weights.shape[-1]).tolist()
-    print(tf.shape(model.layers[1].attention_weights))
-    attention_plotter(model.layers[1].attention_weights[0][0], labels)
-    attention_plotter(model.layers[1].attention_weights[1][0], labels)
-    attention_plotter(model.layers[1].attention_weights[2][0], labels)
-    attention_plotter(model.layers[1].attention_weights[3][0], labels)
-
-    # pred = model.predict(x_test[0])
+    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
+    attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
+    attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
+    attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
 
     preds = []
-    for i in range(x_test.shape[0]):
+    for i in range(x_valid.shape[0]):
         if (i + 1) % 100 == 0:
-            print(f'prediction: {i + 1}/{x_test.shape[0]}')
-        preds.append(model.predict(x_test[i][np.newaxis, ...]))
+            print(f'prediction: {i + 1}/{x_valid.shape[0]}')
+        preds.append(model.predict(x_valid[i][np.newaxis, ...]))
     pred = np.concatenate(preds, axis=0)
-    mse = np.mean(kr.metrics.mse(y_test, pred))
-    mae = np.mean(kr.metrics.mae(y_test, pred))
+    mse = np.mean(kr.metrics.mse(y_valid, pred))
+    mae = np.mean(kr.metrics.mae(y_valid, pred))
     print(f'mse: {mse}, mae: {mae}')
-    # print(pred.flatten())
-    # print(model.layers[1].get_weights()[0])
-
-    print(pred.flatten().shape)
-    print(y_test.shape)
 
     plt.figure(figsize=(14, 8))
     plt.plot(range(pred.size), pred.flatten(), label='pred')
-    plt.plot(range(len(y_test)), y_test, label='true')
+    plt.plot(range(len(y_valid)), y_valid, label='true')
     plt.legend()
     plt.show()
+
+    print("\n\n######################## Model description ################################")
+    model.summary()
+    print("softmax_type = ", softmax_type)
+    print("Input_length = ", input_length)
+    print("Lag = ", lag)
+    print("Epoch = ", epoch)
+
+    print("LR = ", learning_rate)
+    print("Head_num = ", head_num)
+    print("d_model = ", d_model)
+    print("dense_units = ", dense_units)
+    print("batch_size = ", batch_size)
+
+    print("num_examples = ", num_examples)
+    print("num_valid_examples = ", num_valid_examples)
+    print("input_shape = ", input_shape)
+
+    pred = model.predict(x_test)
+    mae = kr.metrics.mae(y_test.numpy().flatten(), pred.flatten())
+    print("\n\n######################## Results ##########################################")
+    print(f'test mae: {np.mean(mae)}')
