@@ -12,6 +12,7 @@ import common.paths
 from visualization_tools.visualization import visualize_pos_encoding, attention_plotter, attention_3d_plotter
 from common.variables import city_labels
 from tensorflow.keras.callbacks import LambdaCallback
+import matplotlib.pyplot as plt
 
 
       
@@ -338,8 +339,8 @@ if __name__ == '__main__':
     dataset = np.load(file_path, allow_pickle=True)
 
     # Get x_train, y_train, x_test, y_test:
-    input_length = 24
-    lag = 1
+    input_length = 16
+    lag = 4
     train, test = dataset_tools.split.split_train_test(dataset)
     x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, lag=lag)
     x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, lag=lag)
@@ -350,19 +351,20 @@ if __name__ == '__main__':
     x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
     y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
 
-    # x_train = x_train[:, :, 0:2, 0:3]
-    # y_train = y_train[:, 0:2, 0:3]
-    # x_test = x_test[:, :, 0:2, 0:3]
-    # y_test = y_test[:, 0:2, 0:3]
+
+    x_train = x_train[:, :, :29, :]
+    y_train = y_train[:, :29, :]
+    x_test = x_test[:, :, :29, :]
+    y_test = y_test[:, :29, :]
 
     print(f'x_train.shape: {x_train.shape}')
     print(f'x_test.shape: {x_test.shape}')
 
     # Parameters:
-    epoch = 10
-    learning_rate = 0.001
+    epoch = 100
+    learning_rate = 0.0001
     d_model = 32
-    head_num = 4
+    head_num = 16
     dense_units = 64
     batch_size = 64
     input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
@@ -372,18 +374,19 @@ if __name__ == '__main__':
     y_train = y_train[..., 0, 2]
     y_test = y_test[..., 0, 2]
     initializer = 'RandomNormal'
-    softmax_type = 3
+    softmax_type = 2
 
-    # x_train = np.zeros((1,) + input_shape)
-    # y_train = np.zeros((1,) + input_shape[1:])
     assert softmax_type in [1,2,3]
 
     model = kr.Sequential([
         kr.Input(input_shape),
         PositionalEncoding(broadcast=True),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
@@ -393,37 +396,64 @@ if __name__ == '__main__':
     # model.compile(optimizer='sgd', loss='mse', metrics=['mae'])
     model.compile(optimizer=kr.optimizers.Adam(learning_rate=learning_rate), loss='mse', metrics=['mae'])
 
-
     num_examples = 10000
-    x_train = x_train[:num_examples]
-    y_train = y_train[:num_examples]
 
-    num_test_examples = 100
+    num_valid_examples = 2000
+    x_valid = x_train[-num_examples - num_valid_examples:-num_examples, ...]
+    y_valid = y_train[-num_examples - num_valid_examples:-num_examples]
+    print(f'x_valid.shape: {x_valid.shape}')
+
+    x_train = x_train[-num_examples:]
+    y_train = y_train[-num_examples:]
+
+
+    num_test_examples = 500
     x_test = x_test[:num_test_examples, ...]
     y_test = y_test[:num_test_examples]
 
     print_attention_weights = kr.callbacks.LambdaCallback(on_train_end=lambda batch: print(model.layers[1].attention_weights))
-
-    model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, validation_data=(x_test,y_test), callbacks=[print_attention_weights])
-
-    pred = model.predict(x_test[0:10])
-
-    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
+    early_stopping = kr.callbacks.EarlyStopping(patience=10, restore_best_weights=True, verbose=1)
     
+    history = model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, validation_data=(x_valid, y_valid),  callbacks=[early_stopping])
+
+    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()    
     # labels = np.arange(36*input_length).tolist()
-    print(tf.shape(model.layers[1].attention_weights))
-        
+    # print(tf.shape(model.layers[1].attention_weights))
+
+    print('')
+    print('Parameters:')
+    print('input_length: ', input_length)
+    print('lag: ', lag)
+    print('epoch: ', epoch)
+    print('learning_rate: ', learning_rate)
+    print('head_num: ', head_num)
+    print('d_model: ', d_model)
+    print('dense_units: ', dense_units)
+    print('batch_size: ', batch_size)
+    print('softmax_type: ', softmax_type)
+    print('input_shape: ', input_shape)
+    print('num_examples: ', num_examples)
+    print('num_valid_examples: ', num_valid_examples)
+    print('num_test_examples: ', num_test_examples)
+
+
     if (softmax_type == 1 or softmax_type == 2):
         attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length,-1)), labels)
-        # attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
-        # attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length,-1)), labels)        
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length,-1)), labels)        
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length,-1)), labels)        
+
     elif softmax_type == 3:
         # print(model.layers[1].attention_weights[0][3].numpy())
         attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
     else:
         pass
     
-    pred = model.predict(x_test[0])
+
+    pred = model.predict(x_test)
+    mae = kr.metrics.mae(y_test.numpy().flatten(), pred.flatten())
+    print(f'test mae: {mae}')
+
 
     preds = []
     for i in range(x_test.shape[0]):
@@ -434,15 +464,10 @@ if __name__ == '__main__':
     mse = np.mean(kr.metrics.mse(y_test, pred))
     mae = np.mean(kr.metrics.mae(y_test, pred))
     print(f'mse: {mse}, mae: {mae}')
-    print(pred.flatten())
-    # print(model.layers[1].get_weights()[0])
+    # print(pred.flatten())
 
 
-    import matplotlib.pyplot as plt
-    
-    print(pred.flatten().shape)
-    print(y_test.shape)
-    
+        
     plt.plot(range(pred.size), pred.flatten(), label='pred')
     plt.plot(range(len(y_test)), y_test, label='true')
     plt.legend()
