@@ -330,75 +330,79 @@ def custom_loss_function(lambada):
         return loss
     
     return mse_loss_function
-        
+
+
+
 
 if __name__ == '__main__':
     # Load dataset:
     filename = 'dataset_tensor.npy'
     file_path = os.path.join(common.paths.PROCESSED_DATASET_DIR, filename)
     dataset = np.load(file_path, allow_pickle=True)
+    print(dataset.shape)
 
-    # Get x_train, y_train, x_test, y_test:
+    """
+    ###### ALL PARAMETERS HERE######:
+    """
+
+    softmax_type = 2
     input_length = 16
     lag = 4
+    epoch = 100
+
+    learning_rate = 0.0001
+    head_num = 16
+    d_model = 32
+    dense_units = 64
+    batch_size = 64
+
+    num_examples = 10000
+    num_valid_examples = 500
+    initializer = 'RandomNormal'
+
     train, test = dataset_tools.split.split_train_test(dataset)
     x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, lag=lag)
     x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, lag=lag)
 
-    x_train = x_train.astype('float32')
+    #x_train = x_train.astype('float32')
     x_train = tf.reshape(x_train, (x_train.shape[0], x_train.shape[1], dataset.shape[1], dataset.shape[2]))
     y_train = tf.reshape(y_train, (y_train.shape[0], dataset.shape[1], dataset.shape[2]))
     x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
     y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
 
-
+    # Choosing first 29 cities
     x_train = x_train[:, :, :29, :]
     y_train = y_train[:, :29, :]
     x_test = x_test[:, :, :29, :]
     y_test = y_test[:, :29, :]
 
+    input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
+    output_shape = (1, 1)
+
+    # Choosing temperature as output
+    y_train = y_train[..., 0, 4]
+    y_test = y_test[..., 0, 4]
+
     print(f'x_train.shape: {x_train.shape}')
     print(f'x_test.shape: {x_test.shape}')
 
-    # Parameters:
-    epoch = 100
-    learning_rate = 0.0001
-    d_model = 32
-    head_num = 16
-    dense_units = 64
-    batch_size = 64
-    input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
-    # output_shape = (36, x_train.shape[-1])
-    # output_shape = (1, x_train.shape[-1])
-    output_shape = (1, 1)
-    y_train = y_train[..., 0, 2]
-    y_test = y_test[..., 0, 2]
-    initializer = 'RandomNormal'
-    softmax_type = 2
-
-    assert softmax_type in [1,2,3]
-
     model = kr.Sequential([
-        kr.Input(input_shape),
+        kr.Input(shape=input_shape),
         PositionalEncoding(broadcast=True),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer,softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
     ])
 
     model.summary()
-    # model.compile(optimizer='sgd', loss='mse', metrics=['mae'])
     model.compile(optimizer=kr.optimizers.Adam(learning_rate=learning_rate), loss='mse', metrics=['mae'])
 
-    num_examples = 10000
-
-    num_valid_examples = 2000
     x_valid = x_train[-num_examples - num_valid_examples:-num_examples, ...]
     y_valid = y_train[-num_examples - num_valid_examples:-num_examples]
     print(f'x_valid.shape: {x_valid.shape}')
@@ -406,37 +410,24 @@ if __name__ == '__main__':
     x_train = x_train[-num_examples:]
     y_train = y_train[-num_examples:]
 
+    # Callbacks
+    print_attention_weights = kr.callbacks.LambdaCallback(
+        on_train_end=lambda batch: print(model.layers[1].attention_weights))
+    early_stopping = kr.callbacks.EarlyStopping(patience=10,
+                                                restore_best_weights=True,
+                                                verbose=1)
 
-    num_test_examples = 500
-    x_test = x_test[:num_test_examples, ...]
-    y_test = y_test[:num_test_examples]
+    history = model.fit(
+        x_train, y_train,
+        epochs=epoch,
+        batch_size=batch_size,
+        validation_data=(x_valid, y_valid),
+        callbacks=[early_stopping]
+    )
 
-    print_attention_weights = kr.callbacks.LambdaCallback(on_train_end=lambda batch: print(model.layers[1].attention_weights))
-    early_stopping = kr.callbacks.EarlyStopping(patience=10, restore_best_weights=True, verbose=1)
+
+    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
     
-    history = model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, validation_data=(x_valid, y_valid),  callbacks=[early_stopping])
-
-    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()    
-    # labels = np.arange(36*input_length).tolist()
-    # print(tf.shape(model.layers[1].attention_weights))
-
-    print('')
-    print('Parameters:')
-    print('input_length: ', input_length)
-    print('lag: ', lag)
-    print('epoch: ', epoch)
-    print('learning_rate: ', learning_rate)
-    print('head_num: ', head_num)
-    print('d_model: ', d_model)
-    print('dense_units: ', dense_units)
-    print('batch_size: ', batch_size)
-    print('softmax_type: ', softmax_type)
-    print('input_shape: ', input_shape)
-    print('num_examples: ', num_examples)
-    print('num_valid_examples: ', num_valid_examples)
-    print('num_test_examples: ', num_test_examples)
-
-
     if (softmax_type == 1 or softmax_type == 2):
         attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length,-1)), labels)
         attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
@@ -448,27 +439,45 @@ if __name__ == '__main__':
         attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
     else:
         pass
+        
+        
+
+    preds = []
+    for i in range(x_valid.shape[0]):
+        if (i + 1) % 100 == 0:
+            print(f'prediction: {i + 1}/{x_valid.shape[0]}')
+        preds.append(model.predict(x_valid[i][np.newaxis, ...]))
+    pred = np.concatenate(preds, axis=0)
+    mse = np.mean(kr.metrics.mse(y_valid, pred))
+    mae = np.mean(kr.metrics.mae(y_valid, pred))
+    print(f'mse: {mse}, mae: {mae}')
+
+    plt.figure(figsize=(14, 8))
+    plt.plot(range(pred.size), pred.flatten(), label='pred')
+    plt.plot(range(len(y_valid)), y_valid, label='true')
+    plt.legend()
+    plt.show()
     
+    
+    print("\n\n######################## Model description ################################")
+    model.summary()
+    print("softmax_type = ", softmax_type)
+    print("Input_length = ", input_length)
+    print("Lag = ", lag)
+    print("Epoch = ", epoch)
+
+    print("LR = ", learning_rate)
+    print("Head_num = ", head_num)
+    print("d_model = ", d_model)
+    print("dense_units = ", dense_units)
+    print("batch_size = ", batch_size)
+
+    print("num_examples = ", num_examples)
+    print("num_valid_examples = ", num_valid_examples)
+    print("input_shape = ", input_shape)
 
     pred = model.predict(x_test)
     mae = kr.metrics.mae(y_test.numpy().flatten(), pred.flatten())
-    print(f'test mae: {mae}')
+    print("\n\n######################## Results ##########################################")
+    print(f'test mae: {np.mean(mae)}')
 
-
-    preds = []
-    for i in range(x_test.shape[0]):
-        if (i + 1) % 100 == 0:
-            print(f'prediction: {i + 1}/{x_test.shape[0]}')
-        preds.append(model.predict(x_test[i][np.newaxis, ...]))
-    pred = np.concatenate(preds, axis=0)
-    mse = np.mean(kr.metrics.mse(y_test, pred))
-    mae = np.mean(kr.metrics.mae(y_test, pred))
-    print(f'mse: {mse}, mae: {mae}')
-    # print(pred.flatten())
-
-
-        
-    plt.plot(range(pred.size), pred.flatten(), label='pred')
-    plt.plot(range(len(y_test)), y_test, label='true')
-    plt.legend()
-    plt.show()
