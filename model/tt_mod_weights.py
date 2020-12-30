@@ -226,12 +226,18 @@ class EncoderLayer(kr.layers.Layer):
 
         return z, attention_weights
 
+
 def custom_loss_function(lambada):
+    
     def mse_loss_function(y_true, y_pred):
-        loss = tf.math.reduce_mean(tf.square(y_true - y_pred)) + lambada * tf.square(
-            tf.math.reduce_mean(y_true - y_pred))
+        
+        loss = tf.math.reduce_mean(tf.square(y_true-y_pred)) + lambada * tf.square(tf.math.reduce_mean(y_true-y_pred))   
         return loss
+    
     return mse_loss_function
+
+
+
 
 if __name__ == '__main__':
     # Load dataset:
@@ -249,7 +255,7 @@ if __name__ == '__main__':
     lag = 4
     epoch = 100
 
-    learning_rate = 0.001
+    learning_rate = 0.0001
     head_num = 16
     d_model = 32
     dense_units = 64
@@ -316,7 +322,7 @@ if __name__ == '__main__':
                                                 restore_best_weights=True,
                                                 verbose=1)
 
-    model.fit(
+    history = model.fit(
         x_train, y_train,
         epochs=epoch,
         batch_size=batch_size,
@@ -324,11 +330,22 @@ if __name__ == '__main__':
         callbacks=[early_stopping]
     )
 
-    pred = model.predict(x_test[0:10])
+
     labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
-    attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
-    attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
-    attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
+    
+    if (softmax_type == 1 or softmax_type == 2):
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length,-1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length,-1)), labels)        
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length,-1)), labels)        
+
+    elif softmax_type == 3:
+        # print(model.layers[1].attention_weights[0][3].numpy())
+        attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
+    else:
+        pass
+        
+        
 
     preds = []
     for i in range(x_valid.shape[0]):
@@ -345,7 +362,8 @@ if __name__ == '__main__':
     plt.plot(range(len(y_valid)), y_valid, label='true')
     plt.legend()
     plt.show()
-
+    
+    
     print("\n\n######################## Model description ################################")
     model.summary()
     print("softmax_type = ", softmax_type)
@@ -367,3 +385,4 @@ if __name__ == '__main__':
     mae = kr.metrics.mae(y_test.numpy().flatten(), pred.flatten())
     print("\n\n######################## Results ##########################################")
     print(f'test mae: {np.mean(mae)}')
+
