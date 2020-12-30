@@ -9,15 +9,17 @@ The first and last dates in 'dataset_tensor.npy':
 
 The order of measurements in 'dataset_tensor.npy' and the minimum, maximum values:
 
-0:  humidity               (min: 5,        max: 100)
-1:  pressure               (min: 800,      max: 1100)
-2:  temperature            (min: 242.3367, max: 321.22)
-3:  weather description    (min: 0,        max: 36)
-4:  wind direction         (min: 0,        max: 360)
-5:  wind speed             (min: 0,        max: 50)
-6:  x coordinate of cities
-7:  y coordinate of cities
-8:  z coordinate of cities
+0:  day of the year        (min: 1,        max: 366)
+1:  hour of the day        (min: 0,        max: 23)
+2:  humidity               (min: 5,        max: 100)
+3:  pressure               (min: 800,      max: 1100)
+4:  temperature            (min: 242.3367, max: 321.22)
+5:  weather description    (min: 0,        max: 36)
+6:  wind direction         (min: 0,        max: 360)
+7:  wind speed             (min: 0,        max: 50)
+8:  x coordinate of cities
+9:  y coordinate of cities
+10:  z coordinate of cities
 
 The order of cities in 'dataset_tensor.npy':
 
