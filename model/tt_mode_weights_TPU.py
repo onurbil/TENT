@@ -155,7 +155,7 @@ class EncoderLayer(kr.layers.Layer):
             aw_list.append(aw)
 
         z = tf.concat(zs, axis=-1)
-        aww = tf.stack(aw_list, axis=0)
+        #aww = tf.stack(aw_list, axis=0)
         self.attention_weights.assign(aww)
 
         z = tf.matmul(z, self.wo)
@@ -333,19 +333,19 @@ if __name__ == '__main__':
         callbacks=[early_stopping]
     )
 
-    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
-
-    if (softmax_type == 1 or softmax_type == 2):
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
-
-    elif softmax_type == 3:
-        # print(model.layers[1].attention_weights[0][3].numpy())
-        attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
-    else:
-        pass
+    # labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
+    #
+    # if (softmax_type == 1 or softmax_type == 2):
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
+    #
+    # elif softmax_type == 3:
+    #     # print(model.layers[1].attention_weights[0][3].numpy())
+    #     attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
+    # else:
+    #     pass
 
     preds = []
     for i in range(x_valid.shape[0]):
