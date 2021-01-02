@@ -155,7 +155,7 @@ class EncoderLayer(kr.layers.Layer):
             aw_list.append(aw)
 
         z = tf.concat(zs, axis=-1)
-        aww = tf.stack(aw_list, axis=0)
+        #aww = tf.stack(aw_list, axis=0)
         #self.attention_weights.assign(aww)
 
         z = tf.matmul(z, self.wo)
@@ -240,6 +240,22 @@ def custom_loss_function(lambada):
         return loss
 
     return mse_loss_function
+
+
+class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+    def __init__(self, d_model, warmup_steps=60):
+        super(CustomSchedule, self).__init__()
+
+        self.d_model = d_model
+        self.d_model = tf.cast(self.d_model, tf.float32)
+
+        self.warmup_steps = warmup_steps
+
+    def __call__(self, step):
+        arg1 = tf.math.rsqrt(step)
+        arg2 = step * (self.warmup_steps ** -1.5)
+
+        return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
 
 
 if __name__ == '__main__':
