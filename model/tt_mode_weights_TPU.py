@@ -242,21 +242,27 @@ def custom_loss_function(lambada):
     return mse_loss_function
 
 
+def get_lr_metric(optimizer):
+    def lr(y_true, y_pred):
+        return optimizer._decayed_lr(tf.float32) # I use ._decayed_lr method instead of .lr
+    return lr
+
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, d_model, warmup_steps=60, factor=-0.5):
+    def __init__(self, d_model, warmup_steps=50, factor1=-0.84, factor2=-1.7):
         super(CustomSchedule, self).__init__()
 
         self.d_model = d_model
         self.d_model = tf.cast(self.d_model, tf.float32)
 
         self.warmup_steps = warmup_steps
-        self.factor = factor
+        self.factor1 = factor1
+        self.factor2 = factor2
 
     def __call__(self, step):
         arg1 = tf.math.rsqrt(step)
-        arg2 = step * (self.warmup_steps ** -1.5)
+        arg2 = step * (self.warmup_steps ** self.factor2)
 
-        return (self.d_model ** self.factor) * tf.math.minimum(arg1, arg2)
+        return (self.d_model ** self.factor1) * tf.math.minimum(arg1, arg2)
 
 
 if __name__ == '__main__':
