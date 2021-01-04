@@ -26,13 +26,6 @@ class PositionalEncoding(kr.layers.Layer):
         super(PositionalEncoding, self).__init__(**kwargs)
         self.broadcast = broadcast
 
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'broadcast': self.broadcast,
-        })
-        return config
-
     def build(self, input_shape):
         self.position = input_shape[-3]
         self.angle_dim = input_shape[-2]
@@ -59,6 +52,16 @@ class PositionalEncoding(kr.layers.Layer):
         pos_encoding = tf.cast(pos_encoding, input_data.dtype)
 
         return tf.math.add(input_data, pos_encoding)
+
+    def get_config(self):
+        config = {
+            'broadcast': self.broadcast,
+        }
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 
 class EncoderLayer(kr.layers.Layer):
@@ -94,18 +97,6 @@ class EncoderLayer(kr.layers.Layer):
         self.dense_hidden = tf.keras.layers.Dense(dense_units, activation='relu')
         self.dense_out: tf.keras.layers.Dense = None
         self.reshape: tf.keras.layers.Reshape = None
-
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'input_length': self.input_length,
-            'd_model': self.d_model,
-            'head_num': self.head_num,
-            'dense_units': self.dense_units,
-            'initializer': self.initializer1,
-            'softmax_type': self.softmax_type,
-        })
-        return config
 
     def build(self, input_shape):
         self.inp_shape = input_shape
@@ -253,6 +244,21 @@ class EncoderLayer(kr.layers.Layer):
 
         return z, attention_weights
 
+    def get_config(self):
+        config = {
+            'input_length': self.input_length,
+            'd_model': self.d_model,
+            'head_num': self.head_num,
+            'dense_units': self.dense_units,
+            'initializer': self.initializer1,
+            'softmax_type': self.softmax_type,
+        }
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __init__(self,
                  d_model,
@@ -268,21 +274,24 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         self.factor1 = factor1
         self.factor2 = factor2
 
-    def get_config(self):
-        config = super().get_config().copy()
-        config.update({
-            'd_model': self.d_model,
-            'warmup_steps': self.warmup_steps,
-            'factor1': self.factor1,
-            'factor2': self.factor2,
-        })
-        return config
-
     def __call__(self, step):
         arg1 = tf.math.rsqrt(step)
         arg2 = step * (self.warmup_steps ** self.factor2)
 
         return (self.d_model1 ** self.factor1) * tf.math.minimum(arg1, arg2)
+
+    def get_config(self):
+        config = {
+            'd_model': self.d_model,
+            'warmup_steps': self.warmup_steps,
+            'factor1': self.factor1,
+            'factor2': self.factor2,
+        }
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 def custom_loss_function(lambada):
     def mse_loss_function(y_true, y_pred):
