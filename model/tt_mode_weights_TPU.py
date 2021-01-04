@@ -232,23 +232,8 @@ class EncoderLayer(kr.layers.Layer):
 
         return z, attention_weights
 
-
-def custom_loss_function(lambada):
-    def mse_loss_function(y_true, y_pred):
-        loss = tf.math.reduce_mean(tf.square(y_true - y_pred)) + lambada * tf.square(
-            tf.math.reduce_mean(y_true - y_pred))
-        return loss
-
-    return mse_loss_function
-
-
-def get_lr_metric(optimizer):
-    def lr(y_true, y_pred):
-        return optimizer._decayed_lr(tf.float32) # I use ._decayed_lr method instead of .lr
-    return lr
-
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, d_model, warmup_steps=50, factor1=-0.84, factor2=-1.7):
+    def __init__(self, d_model, warmup_steps=50, factor1=-0.6, factor2=-1.5):
         super(CustomSchedule, self).__init__()
 
         self.d_model = d_model
@@ -264,6 +249,19 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
         return (self.d_model ** self.factor1) * tf.math.minimum(arg1, arg2)
 
+def custom_loss_function(lambada):
+    def mse_loss_function(y_true, y_pred):
+        loss = tf.math.reduce_mean(tf.square(y_true - y_pred)) + lambada * tf.square(
+            tf.math.reduce_mean(y_true - y_pred))
+        return loss
+
+    return mse_loss_function
+
+
+def get_lr_metric(optimizer):
+    def lr(y_true, y_pred):
+        return optimizer._decayed_lr(tf.float32) # I use ._decayed_lr method instead of .lr
+    return lr
 
 if __name__ == '__main__':
     # Load dataset:

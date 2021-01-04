@@ -212,8 +212,8 @@ class EncoderLayer(kr.layers.Layer):
             #                               k[..., index:index + self.d_k],
             #                               v[..., index:index + self.d_k]))
         z = tf.concat(zs, axis=-1)
-        aww = tf.stack(aw_list, axis=0)
-        self.attention_weights.assign(aww)
+        # aww = tf.stack(aw_list, axis=0)
+        # self.attention_weights.assign(aww)
 
         # z = self.self_attention(q, k, v)
         z = tf.matmul(z, self.wo)
@@ -321,6 +321,22 @@ class EncoderLayer(kr.layers.Layer):
 
         return z,attention_weights
 
+class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+    def __init__(self, d_model, warmup_steps=50, factor1=-0.6, factor2=-1.5):
+        super(CustomSchedule, self).__init__()
+
+        self.d_model = d_model
+        self.d_model = tf.cast(self.d_model, tf.float32)
+
+        self.warmup_steps = warmup_steps
+        self.factor1 = factor1
+        self.factor2 = factor2
+
+    def __call__(self, step):
+        arg1 = tf.math.rsqrt(step)
+        arg2 = step * (self.warmup_steps ** self.factor2)
+
+        return (self.d_model ** self.factor1) * tf.math.minimum(arg1, arg2)
 
 def custom_loss_function(lambada):
     
@@ -331,8 +347,10 @@ def custom_loss_function(lambada):
     
     return mse_loss_function
 
-
-
+def get_lr_metric(optimizer):
+    def lr(y_true, y_pred):
+        return optimizer._decayed_lr(tf.float32) # I use ._decayed_lr method instead of .lr
+    return lr
 
 if __name__ == '__main__':
     # Load dataset:
@@ -426,19 +444,19 @@ if __name__ == '__main__':
     )
 
 
-    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
-    
-    if (softmax_type == 1 or softmax_type == 2):
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length,-1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length,-1)), labels)        
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length,-1)), labels)        
-
-    elif softmax_type == 3:
-        # print(model.layers[1].attention_weights[0][3].numpy())
-        attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
-    else:
-        pass
+    # labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
+    #
+    # if (softmax_type == 1 or softmax_type == 2):
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length,-1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length,-1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length,-1)), labels)
+    #
+    # elif softmax_type == 3:
+    #     # print(model.layers[1].attention_weights[0][3].numpy())
+    #     attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
+    # else:
+    #     pass
         
         
 
