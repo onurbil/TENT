@@ -261,7 +261,7 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
                  factor2=-1.5):
         super(CustomSchedule, self).__init__()
 
-        self.d_model = d_model
+        self.d_model1 = d_model
         self.d_model = tf.cast(self.d_model, tf.float32)
 
         self.warmup_steps = warmup_steps
@@ -271,7 +271,7 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def get_config(self):
         config = super().get_config().copy()
         config.update({
-            'd_model': self.d_model,
+            'd_model': self.d_model1,
             'warmup_steps': self.warmup_steps,
             'factor1': self.factor1,
             'factor2': self.factor2,
