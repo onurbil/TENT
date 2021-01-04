@@ -26,6 +26,13 @@ class PositionalEncoding(kr.layers.Layer):
         super(PositionalEncoding, self).__init__(**kwargs)
         self.broadcast = broadcast
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'broadcast': self.broadcast,
+        })
+        return config
+
     def build(self, input_shape):
         self.position = input_shape[-3]
         self.angle_dim = input_shape[-2]
@@ -72,6 +79,8 @@ class EncoderLayer(kr.layers.Layer):
         self.input_length = input_length
         self.d_model = d_model
         self.head_num = head_num
+        self.dense_units = dense_units
+        self.initializer1 = initializer
         self.initializer = tf.keras.initializers.get(initializer)
         self.softmax_type = softmax_type
         self.batch_size = batch_size
@@ -85,6 +94,18 @@ class EncoderLayer(kr.layers.Layer):
         self.dense_hidden = tf.keras.layers.Dense(dense_units, activation='relu')
         self.dense_out: tf.keras.layers.Dense = None
         self.reshape: tf.keras.layers.Reshape = None
+
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'input_length': self.input_length,
+            'd_model': self.d_model,
+            'head_num': self.head_num,
+            'dense_units': self.dense_units,
+            'initializer': self.initializer1,
+            'softmax_type': self.softmax_type,
+        })
+        return config
 
     def build(self, input_shape):
         self.inp_shape = input_shape
