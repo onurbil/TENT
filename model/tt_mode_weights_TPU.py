@@ -261,8 +261,8 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
                  factor2=-1.5):
         super(CustomSchedule, self).__init__()
 
-        self.d_model1 = d_model
-        self.d_model = tf.cast(d_model, tf.float32)
+        self.d_model = d_model
+        self.d_model1 = tf.cast(d_model, tf.float32)
 
         self.warmup_steps = warmup_steps
         self.factor1 = factor1
@@ -271,7 +271,7 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def get_config(self):
         config = super().get_config().copy()
         config.update({
-            'd_model': self.d_model1,
+            'd_model': self.d_model,
             'warmup_steps': self.warmup_steps,
             'factor1': self.factor1,
             'factor2': self.factor2,
@@ -282,7 +282,7 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         arg1 = tf.math.rsqrt(step)
         arg2 = step * (self.warmup_steps ** self.factor2)
 
-        return (self.d_model ** self.factor1) * tf.math.minimum(arg1, arg2)
+        return (self.d_model1 ** self.factor1) * tf.math.minimum(arg1, arg2)
 
 def custom_loss_function(lambada):
     def mse_loss_function(y_true, y_pred):
