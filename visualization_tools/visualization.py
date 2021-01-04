@@ -39,7 +39,8 @@ def attention_plotter(attention_weights, y_labels, save=False):
            attention_weights.shape[0], len(y_labels))
     # Get for each column the cell with maximal attention:
     max_attention = np.argmax(attention_weights, axis=1)
-        
+    
+    fig, ax = plt.subplots(figsize=(20,10)) 
     ax = sns.heatmap(attention_weights, annot=True, cmap='Blues')
     ax.set(xlabel='Time steps', ylabel='Time steps',
            title='Visualization of Attention Weights')
@@ -50,10 +51,11 @@ def attention_plotter(attention_weights, y_labels, save=False):
     for row, variable in enumerate(max_attention):
         ax.add_patch(Rectangle((variable,row),1,1,
                      fill=False, edgecolor='red', lw=3))
-    plt.show()
     if save:
-        fig = ax.get_figure()
-        fig.savefig("Attention Visualization.png")
+        timestamp = str(datetime.now().strftime("%Y%m%d_%H-%M-%S"))
+        filename = 'attention_' + timestamp + '.png'
+        fig.savefig(filename)
+    plt.show()
 
 
 def attention_3d_plotter(array, x_labels):
