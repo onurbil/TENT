@@ -390,11 +390,11 @@ if __name__ == '__main__':
         kr.Input(shape=input_shape),
         PositionalEncoding(broadcast=True),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
@@ -414,7 +414,7 @@ if __name__ == '__main__':
     print_attention_weights = kr.callbacks.LambdaCallback(
         on_train_end=lambda batch: print(model.layers[1].attention_weights))
     early_stopping = kr.callbacks.EarlyStopping(patience=10,
-                                                restore_best_weights=True,
+                                                restore_best_weights=False,
                                                 verbose=1)
 
     history = model.fit(
@@ -422,8 +422,8 @@ if __name__ == '__main__':
         epochs=epoch,
         batch_size=batch_size,
         validation_data=(x_valid, y_valid),
-        callbacks=[early_stopping]
-    )
+        callbacks=[early_stopping],
+)
 
 
     labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
@@ -440,8 +440,6 @@ if __name__ == '__main__':
     else:
         pass
         
-        
-
     preds = []
     for i in range(x_valid.shape[0]):
         if (i + 1) % 100 == 0:
