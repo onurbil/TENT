@@ -9,6 +9,9 @@ from common.paths import WORKING_DIR, PARENT_WORKING_DIR, DATASET_DIR, ZIP_PATH
 This file checks and if necessary downloads and extracts the dataset according
 to the folder structure.
 
+For reference: 
+https://stackoverflow.com/questions/38511444/python-download-files-from-google-drive-using-url
+
 Folder structure:
 For reading the dataset and creating the models the folder structure must be as 
 following:
