@@ -1,76 +1,18 @@
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from debugging_tools import *
 
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras as kr
-
+import matplotlib.pyplot as plt
 import dataset_tools.split
 import attention.self_attention
 import common.paths
 from visualization_tools.visualization import visualize_pos_encoding, attention_plotter, attention_3d_plotter
-from common.variables import city_labels
 from tensorflow.keras.callbacks import LambdaCallback
-import matplotlib.pyplot as plt
 
-
-      
-# class SelfAttentionLayer(kr.layers.Layer):
-#     def __init__(self,
-#                  input_length,
-#                  d_model,
-#                  head_num,
-#                  input_shape,
-#                  #mask,
-#                  **kwargs):
-#         super(SelfAttentionLayer, self).__init__(**kwargs)
-#
-#         self.input_length = input_length
-#         self.d_model = d_model
-#         self.head_num = head_num
-#
-#         self.wq = None
-#         self.wk = None
-#         self.wv = None
-#         self.wo = None
-#
-#     def build(self, input_shape):
-#         # self.z_all = tf.zeros([input_shape[-2], input_shape[-1], 0])
-#         self.wq = tf.random.normal([input_shape[-1], d_model], mean=0.0, stddev=1.0)
-#         self.wk = tf.random.normal([input_shape[-1], d_model], mean=0.0, stddev=1.0)
-#         self.wv = tf.random.normal([input_shape[-1], d_model], mean=0.0, stddev=1.0)
-#         self.wo = tf.random.normal([self.input_length, self.d_model, input_shape[-1]], mean=0.0, stddev=1.0)
-#
-#     def call(self, inputs):
-#         q = tf.matmul(inputs, self.wq)
-#         k = tf.matmul(inputs, self.wk)
-#         v = tf.matmul(inputs, self.wv)
-#
-#         qe = tf.broadcast_to(q, (q.shape[-3], q.shape[-3], q.shape[-2], q.shape[-1]))
-#         kt = tf.transpose(k, perm=(0, 1, 3, 2))
-#         kt = tf.broadcast_to(kt, (kt.shape[-3], kt.shape[-3], kt.shape[-2], kt.shape[-1]))
-#         z = tf.matmul(qe, kt)
-#
-#         dk = tf.cast(tf.shape(k)[-1], tf.float32)
-#         z = z / tf.math.sqrt(dk)
-#         # if mask is not None:
-#         #     z += (mask * -1e9)
-#
-#         z = tf.reduce_sum(z, axis=[-1, -2])
-#         se = tf.nn.softmax(z, axis=-1)
-#         se = tf.expand_dims(se, -1)
-#         se = tf.expand_dims(se, -1)
-#
-#         ve = tf.broadcast_to(v, [v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]])
-#         se = tf.broadcast_to(se, (v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]))
-#         # z = tf.matmul(se, v)
-#         z = tf.multiply(se, ve)
-#         z = tf.reduce_sum(z, axis=1)
-#
-#         z = tf.matmul(z, self.wo)
-#
-#         return z
 
 def get_angles(pos, i, d_model):
     angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
@@ -105,10 +47,10 @@ class PositionalEncoding(kr.layers.Layer):
         else:
             new_shape = angle_rads.shape[:-1] + self.model_shape
             angle_rads = np.reshape(angle_rads, new_shape)
-        
-        pos_encoding = tf.broadcast_to(angle_rads,tf.shape(input_data))
+
+        pos_encoding = tf.broadcast_to(angle_rads, tf.shape(input_data))
         pos_encoding = tf.cast(pos_encoding, input_data.dtype)
-                
+
         return tf.math.add(input_data, pos_encoding)
 
     def get_config(self):
@@ -120,6 +62,7 @@ class PositionalEncoding(kr.layers.Layer):
     @classmethod
     def from_config(cls, config):
         return cls(**config)
+
 
 class EncoderLayer(kr.layers.Layer):
     def __init__(self,
@@ -142,7 +85,8 @@ class EncoderLayer(kr.layers.Layer):
         self.initializer1 = initializer
         self.initializer = tf.keras.initializers.get(initializer)
         self.softmax_type = softmax_type
-        
+        self.batch_size = batch_size
+
         self.wq = None
         self.wk = None
         self.wv = None
@@ -152,11 +96,9 @@ class EncoderLayer(kr.layers.Layer):
         self.dense_hidden = tf.keras.layers.Dense(dense_units, activation='relu')
         self.dense_out: tf.keras.layers.Dense = None
         self.reshape: tf.keras.layers.Reshape = None
-        
 
     def build(self, input_shape):
         self.inp_shape = input_shape
-        # print(input_shape)
 
         self.z_all = tf.zeros([input_shape[-2], input_shape[-1], 0])
         self.wq = self.add_weight(
@@ -207,34 +149,29 @@ class EncoderLayer(kr.layers.Layer):
         zs = []
         aw_list = []
         batch_size = tf.shape(inputs)[0]
-        
+
         for i in range(self.head_num):
             index = i * self.d_k
-            
+
             zz, aw = self.self_attention(batch_size, q[..., index:index + self.d_k],
-                                          k[..., index:index + self.d_k],
-                                          v[..., index:index + self.d_k],
-                                          softmax_type=self.softmax_type)
-            
+                                         k[..., index:index + self.d_k],
+                                         v[..., index:index + self.d_k],
+                                         softmax_type=self.softmax_type)
+
             zs.append(zz)
             aw_list.append(aw)
-        
-            # zs.append(self.self_attention(batch_size, q[..., index:index + self.d_k],
-            #                               k[..., index:index + self.d_k],
-            #                               v[..., index:index + self.d_k]))
-        z = tf.concat(zs, axis=-1)
-        # aww = tf.stack(aw_list, axis=0)
-        # self.attention_weights.assign(aww)
 
-        # z = self.self_attention(q, k, v)
+        z = tf.concat(zs, axis=-1)
+        #aww = tf.stack(aw_list, axis=0)
+        #self.attention_weights.assign(aww)
+
         z = tf.matmul(z, self.wo)
-        
+
         # 1. Residual:
         sum = tf.math.add(inputs, z)
         norm = self.layer_norm(sum)
 
         # linear
-
         x = self.flatten(norm)
         x = self.dense_hidden(x)
         x = self.dense_out(x)
@@ -249,34 +186,6 @@ class EncoderLayer(kr.layers.Layer):
         """
         Calculates self attention:
         """
-        # q = tf.expand_dims(q, 1)
-        # qe = tf.broadcast_to(q, (batch_size, q.shape[-3], q.shape[-3], q.shape[-2], q.shape[-1]))
-        # kt = tf.transpose(k, perm=(0, 1, 3, 2))
-        # kt = tf.expand_dims(kt, 1)
-        # kt = tf.broadcast_to(kt, (batch_size, kt.shape[-3], kt.shape[-3], kt.shape[-2], kt.shape[-1]))
-        # z = tf.matmul(qe, kt)
-
-        # kt = tf.transpose(k, perm=(0, 1, 3, 2))
-        #
-        # d1 = tf.raw_ops.Empty(shape=(0,q.shape[1], q.shape[1], q.shape[2], q.shape[2]), dtype=q.dtype)
-        # for b in range(batch_size):
-        #     tf.autograph.experimental.set_loop_options(shape_invariants=[(d1, tf.TensorShape((None,q.shape[1], q.shape[1], q.shape[2], q.shape[2])))])
-        #
-        #
-        #     d2 = tf.raw_ops.Empty(shape=(0,q.shape[1], q.shape[2], q.shape[2]), dtype=q.dtype)
-        #     for t in range(q.shape[1]):
-        #         # tf.autograph.experimental.set_loop_options(shape_invariants=[(d2, tf.TensorShape((None,q.shape[1], q.shape[2], q.shape[2]), dtype=q.dtype)))])
-        #
-        #         aa = tf.matmul(q[b,t],kt[b])
-        #         aa = tf.expand_dims(aa,0)
-        #         d2 = tf.concat([d2,aa], axis=0)
-        #         # tf.print(tf.shape(d2))
-        #
-        #     d2 = tf.expand_dims(d2,0)
-        #     d1 = tf.concat([d1,d2], axis=0)
-        #
-        # z=d1
-
         q_shape = tf.shape(q)
         q_expanded_shape = (q_shape[0], q_shape[1], q_shape[1], q_shape[2], q_shape[3])
         k_expanded_shape = (q_shape[0], q_shape[1], q_shape[1], q_shape[3], q_shape[2])
@@ -289,39 +198,37 @@ class EncoderLayer(kr.layers.Layer):
 
         dk = tf.cast(tf.shape(k)[-1], tf.float32)
         z = z / tf.math.sqrt(dk)
-        
+
         # if mask is not None:
         #     z += (mask * -1e9)
-        
-        
+
         if softmax_type == 1:
             z = tf.reduce_sum(z, axis=[-1, -2])
             se = tf.nn.softmax(z, axis=-1)
             # Attention weights to plot:
-            attention_weights = se  
+            attention_weights = se
             se = tf.expand_dims(se, -1)
 
-        
-        elif softmax_type == 2:        
+
+        elif softmax_type == 2:
             # Softmax over all measurements:
             z = tf.reduce_sum(z, axis=[-1, -2])
             z_shape = tf.shape(z)
-            z = tf.reshape(z, [z_shape[0],-1])
+            z = tf.reshape(z, [z_shape[0], -1])
             se = tf.nn.softmax(z, axis=-1)
-            se = tf.reshape(se, [z_shape[0],z_shape[1],z_shape[2]])
+            se = tf.reshape(se, [z_shape[0], z_shape[1], z_shape[2]])
             # Attention weights to plot:
-            attention_weights = se  
+            attention_weights = se
             se = tf.expand_dims(se, -1)
 
-        
         elif softmax_type == 3:
             z = tf.reduce_sum(z, axis=-1)
             se = tf.nn.softmax(z, axis=-1)
             # Attention weights to plot:
-            attention_weights = se  
-                                
+            attention_weights = se
+
         se = tf.expand_dims(se, -1)
-        
+
         v = tf.expand_dims(v, 1)
         ve = tf.broadcast_to(v, (batch_size, v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]))
         se = tf.broadcast_to(se, (batch_size, v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]))
@@ -330,7 +237,7 @@ class EncoderLayer(kr.layers.Layer):
         z = tf.multiply(se, ve)
         z = tf.reduce_sum(z, axis=2)
 
-        return z,attention_weights
+        return z, attention_weights
 
     def get_config(self):
         config = {
@@ -348,11 +255,15 @@ class EncoderLayer(kr.layers.Layer):
         return cls(**config)
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, d_model, warmup_steps=50, factor1=-0.6, factor2=-1.5):
+    def __init__(self,
+                 d_model,
+                 warmup_steps=50,
+                 factor1=-0.6,
+                 factor2=-1.5):
         super(CustomSchedule, self).__init__()
 
         self.d_model = d_model
-        self.d_model1 = tf.cast(self.d_model, tf.float32)
+        self.d_model1 = tf.cast(d_model, tf.float32)
 
         self.warmup_steps = warmup_steps
         self.factor1 = factor1
@@ -378,13 +289,13 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         return cls(**config)
 
 def custom_loss_function(lambada):
-    
     def mse_loss_function(y_true, y_pred):
-        
-        loss = tf.math.reduce_mean(tf.square(y_true-y_pred)) + lambada * tf.square(tf.math.reduce_mean(y_true-y_pred))   
+        loss = tf.math.reduce_mean(tf.square(y_true - y_pred)) + lambada * tf.square(
+            tf.math.reduce_mean(y_true - y_pred))
         return loss
-    
+
     return mse_loss_function
+
 
 def get_lr_metric(optimizer):
     def lr(y_true, y_pred):
@@ -405,7 +316,7 @@ if __name__ == '__main__':
     softmax_type = 2
     input_length = 16
     lag = 4
-    epoch = 100
+    epoch = 2  # 100
 
     learning_rate = 0.0001
     head_num = 16
@@ -421,7 +332,7 @@ if __name__ == '__main__':
     x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, lag=lag)
     x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, lag=lag)
 
-    #x_train = x_train.astype('float32')
+    # x_train = x_train.astype('float32')
     x_train = tf.reshape(x_train, (x_train.shape[0], x_train.shape[1], dataset.shape[1], dataset.shape[2]))
     y_train = tf.reshape(y_train, (y_train.shape[0], dataset.shape[1], dataset.shape[2]))
     x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
@@ -471,7 +382,7 @@ if __name__ == '__main__':
     print_attention_weights = kr.callbacks.LambdaCallback(
         on_train_end=lambda batch: print(model.layers[1].attention_weights))
     early_stopping = kr.callbacks.EarlyStopping(patience=10,
-                                                restore_best_weights=False,
+                                                restore_best_weights=True,
                                                 verbose=1)
 
     history = model.fit(
@@ -479,24 +390,23 @@ if __name__ == '__main__':
         epochs=epoch,
         batch_size=batch_size,
         validation_data=(x_valid, y_valid),
-        callbacks=[early_stopping],
-)
-
+        callbacks=[early_stopping]
+    )
 
     # labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
     #
     # if (softmax_type == 1 or softmax_type == 2):
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length,-1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length,-1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length,-1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length,-1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
     #
     # elif softmax_type == 3:
     #     # print(model.layers[1].attention_weights[0][3].numpy())
     #     attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
     # else:
     #     pass
-        
+
     preds = []
     for i in range(x_valid.shape[0]):
         if (i + 1) % 100 == 0:
@@ -512,8 +422,7 @@ if __name__ == '__main__':
     plt.plot(range(len(y_valid)), y_valid, label='true')
     plt.legend()
     plt.show()
-    
-    
+
     print("\n\n######################## Model description ################################")
     model.summary()
     print("softmax_type = ", softmax_type)
