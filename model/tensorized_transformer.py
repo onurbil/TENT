@@ -111,6 +111,15 @@ class PositionalEncoding(kr.layers.Layer):
                 
         return tf.math.add(input_data, pos_encoding)
 
+    def get_config(self):
+        config = {
+            'broadcast': self.broadcast,
+        }
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 class EncoderLayer(kr.layers.Layer):
     def __init__(self,
@@ -129,6 +138,7 @@ class EncoderLayer(kr.layers.Layer):
         self.input_length = input_length
         self.d_model = d_model
         self.head_num = head_num
+        self.initializer1 = initializer
         self.initializer = tf.keras.initializers.get(initializer)
         self.softmax_type = softmax_type
         
@@ -321,12 +331,27 @@ class EncoderLayer(kr.layers.Layer):
 
         return z,attention_weights
 
+    def get_config(self):
+        config = {
+            'input_length': self.input_length,
+            'd_model': self.d_model,
+            'head_num': self.head_num,
+            'dense_units': self.dense_units,
+            'initializer': self.initializer1,
+            'softmax_type': self.softmax_type,
+        }
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __init__(self, d_model, warmup_steps=50, factor1=-0.6, factor2=-1.5):
         super(CustomSchedule, self).__init__()
 
         self.d_model = d_model
-        self.d_model = tf.cast(self.d_model, tf.float32)
+        self.d_model1 = tf.cast(self.d_model, tf.float32)
 
         self.warmup_steps = warmup_steps
         self.factor1 = factor1
@@ -336,7 +361,20 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         arg1 = tf.math.rsqrt(step)
         arg2 = step * (self.warmup_steps ** self.factor2)
 
-        return (self.d_model ** self.factor1) * tf.math.minimum(arg1, arg2)
+        return (self.d_model1 ** self.factor1) * tf.math.minimum(arg1, arg2)
+
+    def get_config(self):
+        config = {
+            'd_model': self.d_model,
+            'warmup_steps': self.warmup_steps,
+            'factor1': self.factor1,
+            'factor2': self.factor2,
+        }
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 def custom_loss_function(lambada):
     
