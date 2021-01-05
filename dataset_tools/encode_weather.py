@@ -11,6 +11,19 @@ Encode the categories in the weather_description.csv:
 
 To load the array please use:
 np.load('path to file', allow_pickle=True)
+
+Categories:
+
+['overcast clouds', 'sky is clear', 'broken clouds', 'fog', 'mist',
+ 'scattered clouds', 'few clouds', 'light rain', 'light intensity drizzle',
+ 'moderate rain', 'light intensity shower rain', 'haze', 'heavy shower snow',
+ 'heavy snow', 'shower snow', 'proximity shower rain', 'snow', 'freezing rain',
+ 'light rain and snow', 'light snow', 'light shower sleet',
+ 'light intensity drizzle rain', 'proximity thunderstorm',
+ 'thunderstorm with light rain', 'heavy intensity rain',
+ 'thunderstorm with rain', 'very heavy rain', 'smoke', 'thunderstorm', 'dust',
+ 'light shower snow', 'shower rain', 'shower drizzle', 'sand',
+ 'thunderstorm with heavy rain', 'heavy intensity shower rain', 'drizzle']
 """
 
 
