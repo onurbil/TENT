@@ -130,14 +130,14 @@ class EncoderLayer(kr.layers.Layer):
         self.d_k = int(self.d_model / self.head_num)
         
         
-        if self.softmax_type in (1,2):
-            attention_shape = self.head_num,0,self.input_length, self.input_length
-        
-        if self.softmax_type == 3:
-            attention_shape = (self.head_num,0,self.input_length, self.input_length,input_shape[-2])
-        
-        self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=attention_shape,dtype=tf.float32), trainable=False)
-        # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=(self.head_num,0,self.input_length, self.input_length), dtype=tf.float32), trainable=False)
+        # if self.softmax_type in (1,2):
+        #     attention_shape = self.head_num,0,self.input_length, self.input_length
+        #
+        # if self.softmax_type == 3:
+        #     attention_shape = (self.head_num,0,self.input_length, self.input_length,input_shape[-2])
+        #
+        # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=attention_shape,dtype=tf.float32), trainable=False)
+        # # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=(self.head_num,0,self.input_length, self.input_length), dtype=tf.float32), trainable=False)
 
     def call(self, inputs):
 
