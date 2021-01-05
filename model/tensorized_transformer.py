@@ -85,7 +85,6 @@ class EncoderLayer(kr.layers.Layer):
         self.initializer1 = initializer
         self.initializer = tf.keras.initializers.get(initializer)
         self.softmax_type = softmax_type
-        self.batch_size = batch_size
 
         self.wq = None
         self.wk = None
