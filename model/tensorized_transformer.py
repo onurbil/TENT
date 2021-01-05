@@ -138,6 +138,7 @@ class EncoderLayer(kr.layers.Layer):
         self.input_length = input_length
         self.d_model = d_model
         self.head_num = head_num
+        self.dense_units = dense_units
         self.initializer1 = initializer
         self.initializer = tf.keras.initializers.get(initializer)
         self.softmax_type = softmax_type
