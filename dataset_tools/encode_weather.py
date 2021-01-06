@@ -2,9 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from sklearn.preprocessing import LabelEncoder
 from common.paths import WORKING_DIR, PARENT_WORKING_DIR, DATASET_DIR, PROCESSED_DATASET_DIR
-
+from common.variables import weather_desc_labels
 
 """
 Encode the categories in the weather_description.csv:
@@ -14,16 +13,7 @@ np.load('path to file', allow_pickle=True)
 
 Categories:
 
-['overcast clouds', 'sky is clear', 'broken clouds', 'fog', 'mist',
- 'scattered clouds', 'few clouds', 'light rain', 'light intensity drizzle',
- 'moderate rain', 'light intensity shower rain', 'haze', 'heavy shower snow',
- 'heavy snow', 'shower snow', 'proximity shower rain', 'snow', 'freezing rain',
- 'light rain and snow', 'light snow', 'light shower sleet',
- 'light intensity drizzle rain', 'proximity thunderstorm',
- 'thunderstorm with light rain', 'heavy intensity rain',
- 'thunderstorm with rain', 'very heavy rain', 'smoke', 'thunderstorm', 'dust',
- 'light shower snow', 'shower rain', 'shower drizzle', 'sand',
- 'thunderstorm with heavy rain', 'heavy intensity shower rain', 'drizzle']
+['shower drizzle', 'freezing rain', 'volcanic ash', 'proximity shower rain', 'fog', 'shower snow', 'tornado', 'drizzle', 'heavy shower snow', 'few clouds', 'proximity sand/dust whirls', 'mist', 'light rain', 'light shower sleet', 'rain and snow', 'proximity thunderstorm with rain', 'thunderstorm with heavy drizzle', 'overcast clouds', 'sky is clear', 'light rain and snow', 'proximity moderate rain', 'light intensity drizzle rain', 'heavy thunderstorm', 'thunderstorm with rain', 'scattered clouds', 'sand/dust whirls', 'moderate rain', 'broken clouds', 'shower rain', 'smoke', 'haze', 'heavy intensity shower rain', 'sleet', 'squalls', 'heavy snow', 'sand', 'ragged shower rain', 'thunderstorm with heavy rain', 'ragged thunderstorm', 'thunderstorm with light rain', 'thunderstorm with light drizzle', 'light intensity shower rain', 'snow', 'heavy intensity rain', 'light shower snow', 'thunderstorm with drizzle', 'heavy intensity drizzle', 'thunderstorm', 'light snow', 'proximity thunderstorm', 'light intensity drizzle', 'dust', 'proximity thunderstorm with drizzle', 'very heavy rain']
 """
 
 
@@ -31,19 +21,22 @@ def encode_weather_desc(input_folder, output_folder, file, norm=True):
     """
     Encode the categories in [file]
     norm: (bool) Normalize dataset between [0,1]
-    """
+    """    
     file_path = os.path.join(input_folder, file)
     df_table = pd.read_csv(file_path)
     df_table.fillna(method='ffill', inplace=True)
     df_table.fillna(method='bfill', inplace=True)
-    df_table.iloc[:,1:] = df_table.iloc[:,1:].apply(LabelEncoder().fit_transform)
+
+    for i in list(df_table.columns)[1:]:
+        df_table[i] = df_table[i].map(weather_desc_labels)
+
     np_table = df_table.to_numpy()
     
     if norm:
         max_val = np_table[:,1:].max()
         min_val = np_table[:,1:].min()
         np_table[:,1:] = (np_table[:,1:] - min_val)/(max_val - min_val)
-
+    
     new_filename = Path(file).stem
     new_filepath = os.path.join(output_folder, new_filename)
     np.save(new_filepath, np_table)

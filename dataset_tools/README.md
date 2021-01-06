@@ -14,7 +14,7 @@ The order of measurements in 'dataset_tensor.npy' and the minimum, maximum value
 2:  humidity               (min: 5,        max: 100)
 3:  pressure               (min: 800,      max: 1100)
 4:  temperature            (min: 242.3367, max: 321.22)
-5:  weather description    (min: 0,        max: 36)
+5:  weather description    (min: 0,        max: 53)
 6:  wind direction         (min: 0,        max: 360)
 7:  wind speed             (min: 0,        max: 50)
 8:  x coordinate of cities
