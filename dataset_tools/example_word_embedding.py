@@ -18,16 +18,7 @@ https://nlp.stanford.edu/projects/glove/
 """
 
 
-docs = ['overcast clouds', 'sky is clear', 'broken clouds', 'fog', 'mist',
- 'scattered clouds', 'few clouds', 'light rain', 'light intensity drizzle',
- 'moderate rain', 'light intensity shower rain', 'haze', 'heavy shower snow',
- 'heavy snow', 'shower snow', 'proximity shower rain', 'snow', 'freezing rain',
- 'light rain and snow', 'light snow', 'light shower sleet',
- 'light intensity drizzle rain', 'proximity thunderstorm',
- 'thunderstorm with light rain', 'heavy intensity rain',
- 'thunderstorm with rain', 'very heavy rain', 'smoke', 'thunderstorm', 'dust',
- 'light shower snow', 'shower rain', 'shower drizzle', 'sand',
- 'thunderstorm with heavy rain', 'heavy intensity shower rain', 'drizzle']
+docs = ['shower drizzle', 'freezing rain', 'volcanic ash', 'proximity shower rain', 'fog', 'shower snow', 'tornado', 'drizzle', 'heavy shower snow', 'few clouds', 'proximity sand/dust whirls', 'mist', 'light rain', 'light shower sleet', 'rain and snow', 'proximity thunderstorm with rain', 'thunderstorm with heavy drizzle', 'overcast clouds', 'sky is clear', 'light rain and snow', 'proximity moderate rain', 'light intensity drizzle rain', 'heavy thunderstorm', 'thunderstorm with rain', 'scattered clouds', 'sand/dust whirls', 'moderate rain', 'broken clouds', 'shower rain', 'smoke', 'haze', 'heavy intensity shower rain', 'sleet', 'squalls', 'heavy snow', 'sand', 'ragged shower rain', 'thunderstorm with heavy rain', 'ragged thunderstorm', 'thunderstorm with light rain', 'thunderstorm with light drizzle', 'light intensity shower rain', 'snow', 'heavy intensity rain', 'light shower snow', 'thunderstorm with drizzle', 'heavy intensity drizzle', 'thunderstorm', 'light snow', 'proximity thunderstorm', 'light intensity drizzle', 'dust', 'proximity thunderstorm with drizzle', 'very heavy rain']
 
 class_count = len(docs)
 labels = np.arange(class_count)
@@ -36,13 +27,13 @@ labels = np.arange(class_count)
 t = Tokenizer()
 t.fit_on_texts(docs)
 vocab_size = len(t.word_index) + 1
+
 # integer encode the documents
 encoded_docs = t.texts_to_sequences(docs)
-print(encoded_docs)
+
 # pad documents to a max length of 4 words
 max_length = 4
 padded_docs = pad_sequences(encoded_docs, maxlen=max_length, padding='post')
-print(padded_docs)
 # load the whole embedding into memory
 embeddings_index = dict()
 f = open('glove.6B.100d.txt')
@@ -59,22 +50,30 @@ for word, i in t.word_index.items():
     embedding_vector = embeddings_index.get(word)
     if embedding_vector is not None:
         embedding_matrix[i] = embedding_vector
-# define model
+
+
 model = Sequential()
-e = Embedding(vocab_size, 100, weights=[embedding_matrix], input_length=4, trainable=False)
+# e = Embedding(vocab_size, 100, weights=[embedding_matrix], input_length=4, trainable=False)
+e = Embedding(vocab_size, 3, input_length=4, trainable=True)
 model.add(e)
 model.add(Flatten())
 model.add(Dense(class_count, activation='sigmoid'))
-# compile the model
-# model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# summarize the model
 print(model.summary())
-# fit the model
-# debug(padded_docs.reshape((-1,1)))
+
 labels = keras.utils.to_categorical(labels, len(docs))
-model.fit(padded_docs, labels, epochs=100, verbose=1)
+model.fit(padded_docs, labels, epochs=2000, verbose=1)
 # evaluate the model
 loss, accuracy = model.evaluate(padded_docs, labels, verbose=0)
 print('Accuracy: %f' % (accuracy*100))
+
+from keras.models import Model
+
+layer_name = 'embedding'
+intermediate_layer_model = Model(inputs=model.input,
+                                 outputs=model.get_layer(layer_name).output)
+intermediate_output = intermediate_layer_model.predict(padded_docs)
+print(intermediate_output)
+print(intermediate_output.shape)

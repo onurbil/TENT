@@ -315,9 +315,9 @@ if __name__ == '__main__':
     softmax_type = 2
     input_length = 16
     lag = 4
-    epoch = 2  # 100
+    epoch = 100  # 100
 
-    learning_rate = 0.0001
+    learning_rate = 0.001
     head_num = 16
     d_model = 32
     dense_units = 64
@@ -357,8 +357,8 @@ if __name__ == '__main__':
         kr.Input(shape=input_shape),
         PositionalEncoding(broadcast=True),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
         # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
         # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
         # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
