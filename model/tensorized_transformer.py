@@ -376,7 +376,7 @@ if __name__ == '__main__':
 
     x_train = x_train[-num_examples:]
     y_train = y_train[-num_examples:]
-
+    
     # Callbacks
     print_attention_weights = kr.callbacks.LambdaCallback(
         on_train_end=lambda batch: print(model.layers[1].attention_weights))
