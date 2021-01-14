@@ -20,18 +20,12 @@ def get_angles(pos, i, d_model):
 
 
 class PositionalEncoding(kr.layers.Layer):
-    def __init__(self,
-                 broadcast,
-                 **kwargs):
+    def __init__(self, **kwargs):
         super(PositionalEncoding, self).__init__(**kwargs)
-        self.broadcast = broadcast
 
     def build(self, input_shape):
         self.position = input_shape[-3]
         self.angle_dim = input_shape[-2]
-        if not self.broadcast:
-            self.angle_dim *= input_shape[-1]
-
         self.model_shape = input_shape
         self.batch_size = input_shape[0]
 
@@ -42,22 +36,18 @@ class PositionalEncoding(kr.layers.Layer):
         angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
         angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
 
-        if self.broadcast:
-            angle_rads = np.broadcast_to(np.expand_dims(angle_rads, -1), input_data.shape[1:])
-        else:
-            new_shape = angle_rads.shape[:-1] + self.model_shape
-            angle_rads = np.reshape(angle_rads, new_shape)
+        angle_rads = np.broadcast_to(np.expand_dims(angle_rads, -1), input_data.shape[1:])
 
         pos_encoding = tf.broadcast_to(angle_rads, tf.shape(input_data))
         pos_encoding = tf.cast(pos_encoding, input_data.dtype)
 
         return tf.math.add(input_data, pos_encoding)
 
-    def get_config(self):
-        config = {
-            'broadcast': self.broadcast,
-        }
-        return config
+    # def get_config(self):
+    #     config = {
+    #         'broadcast': self.broadcast,
+    #     }
+    #     return config
 
     @classmethod
     def from_config(cls, config):
@@ -167,8 +157,8 @@ class EncoderLayer(kr.layers.Layer):
             aw_list.append(aw)
 
         z = tf.concat(zs, axis=-1)
-        #aww = tf.stack(aw_list, axis=0)
-        #self.attention_weights.assign(aww)
+        aww = tf.stack(aw_list, axis=0)
+        self.attention_weights.assign(aww)
 
         z = tf.matmul(z, self.wo)
 
@@ -318,7 +308,7 @@ if __name__ == '__main__':
     ###### ALL PARAMETERS HERE######:
     """
 
-    softmax_type = 2
+    softmax_type = 3
     input_length = 16
     lag = 4
     epoch = 2  # 100
@@ -326,7 +316,7 @@ if __name__ == '__main__':
     learning_rate = 0.0001
     head_num = 16
     d_model = 32
-    dense_units = 64
+    dense_units = 128
     batch_size = 64
 
     num_examples = 2 * batch_size
@@ -360,14 +350,14 @@ if __name__ == '__main__':
     print(f'x_test.shape: {x_test.shape}')
 
     model = kr.Sequential([
-        kr.Input(shape=input_shape, batch_size=batch_size),
-        PositionalEncoding(broadcast=True),
+        kr.Input(shape=input_shape),
+        PositionalEncoding(),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
@@ -398,19 +388,20 @@ if __name__ == '__main__':
         callbacks=[early_stopping]
     )
 
-    # labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
-    #
-    # if (softmax_type == 1 or softmax_type == 2):
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
-    #
-    # elif softmax_type == 3:
-    #     # print(model.layers[1].attention_weights[0][3].numpy())
-    #     attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
-    # else:
-    #     pass
+    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
+
+    if (softmax_type == 1 or softmax_type == 2):
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
+
+    elif softmax_type == 3:
+        from common.variables import city_labels
+        attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels[:29])
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[0][3][0], (input_length, -1)), labels)
+    else:
+        pass
 
     preds = []
     for i in range(x_valid.shape[0]):

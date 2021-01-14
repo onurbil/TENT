@@ -124,8 +124,8 @@ def attention_3d_plotter(array, x_labels):
 
 
 # city_labels = ['a','b','c','d']
-# test_array = np.random.rand(24,24,36)
-# attention_3d_plotter(test_array, city_labels)
+test_array = np.random.rand(24,24,36)
+attention_3d_plotter(test_array, city_labels)
 
 
 # To call tensorboard:
