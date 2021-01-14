@@ -27,7 +27,7 @@ def visualize_pos_encoding(array):
     plt.show()
 
 
-def attention_plotter(attention_weights, y_labels, save=False):
+def attention_plotter(attention_weights, plot_title, x_axis, y_axis, x_labels, y_labels, save=False, save_path='attention_weights.png'):
     """
     Visualization for attention weights for each input:
     Inputs:
@@ -38,24 +38,52 @@ def attention_plotter(attention_weights, y_labels, save=False):
            ), 'Attention weight has size {} and labels has size {}!'.format(
            attention_weights.shape[0], len(y_labels))
     # Get for each column the cell with maximal attention:
-    max_attention = np.argmax(attention_weights, axis=1)
+    # debug(attention_weights)
+    max_attention = np.argmax(attention_weights)
+    row = max_attention // len(x_labels)
+    col = max_attention % len(x_labels)
     
-    fig, ax = plt.subplots(figsize=(20,10)) 
+    fig, ax = plt.subplots(figsize=(20,12)) 
     ax = sns.heatmap(attention_weights, annot=True, cmap='Blues')
-    ax.set(xlabel='Time steps', ylabel='Time steps',
-           title='Visualization of Attention Weights')
+    ax.set(xlabel=x_axis, ylabel=y_axis,
+           title=plot_title)
     bottom, top = ax.get_ylim()
     ax.set_ylim(bottom + 0.5, top - 0.5)
+    ax.set_xticklabels(x_labels, rotation=90)
     ax.set_yticklabels(y_labels, rotation=0)
     # Draw rectangle around the cell with maximum attention:
-    for row, variable in enumerate(max_attention):
-        ax.add_patch(Rectangle((variable,row),1,1,
-                     fill=False, edgecolor='red', lw=3))
-    if save:
-        timestamp = str(datetime.now().strftime("%Y%m%d_%H-%M-%S"))
-        filename = 'attention_' + timestamp + '.png'
-        fig.savefig(filename)
-    plt.show()
+    # for row, variable in enumerate(max_attention):
+    ax.add_patch(Rectangle((col,row),1,1,
+                 fill=False, edgecolor='red', lw=3))
+    
+        
+    if save:    
+        fig.savefig(save_path)
+    plt.close()
+    # plt.show()
+
+
+def loop_plotter(array):
+    
+    y_labels = np.arange(array.shape[-2])
+    x_labels = city_labels[:array.shape[-1]]
+    folder_name = 'visualization'
+    
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+
+
+    for i in range(array.shape[0]):
+        
+        arr = array[i][0]
+    
+        for j in range(arr.shape[0]):
+            
+            save_path = os.path.join(folder_name, 'attention_head{}_time{}.png'.format(i,j))
+            attention_plotter(attention_weights=arr[j], plot_title='Attention weights of head: {}, time step: {}'.format(i,j),
+                              x_axis='City', y_axis='Time step', 
+                              x_labels=x_labels, y_labels=y_labels, 
+                              save=True, save_path=save_path)
 
 
 def attention_3d_plotter(array, x_labels):
@@ -124,8 +152,14 @@ def attention_3d_plotter(array, x_labels):
 
 
 # city_labels = ['a','b','c','d']
-test_array = np.random.rand(24,24,36)
-attention_3d_plotter(test_array, city_labels)
+# test_array = np.random.rand(24,24,36)
+# attention_3d_plotter(test_array, city_labels)
+# y_labels = np.arange(16)
+# test = np.arange(16*29)/(16*29)
+# test=test.reshape((16,29))
+# city_labels = city_labels[:29]
+# debug(city_labels)
+# attention_plotter(test, x_axis='City', y_axis='Time step', x_labels=city_labels, y_labels=y_labels, save=True, filename='attention.png')
 
 
 # To call tensorboard:

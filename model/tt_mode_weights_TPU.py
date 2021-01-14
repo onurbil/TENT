@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import dataset_tools.split
 import attention.self_attention
 import common.paths
-from visualization_tools.visualization import visualize_pos_encoding, attention_plotter, attention_3d_plotter
+from visualization_tools.visualization import visualize_pos_encoding, attention_plotter, attention_3d_plotter, loop_plotter
 from tensorflow.keras.callbacks import LambdaCallback
 
 
@@ -311,10 +311,10 @@ if __name__ == '__main__':
     softmax_type = 3
     input_length = 16
     lag = 4
-    epoch = 2  # 100
+    epoch = 1  # 100
 
     learning_rate = 0.0001
-    head_num = 16
+    head_num = 4
     d_model = 32
     dense_units = 128
     batch_size = 64
@@ -398,8 +398,11 @@ if __name__ == '__main__':
 
     elif softmax_type == 3:
         from common.variables import city_labels
-        attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels[:29])
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[0][3][0], (input_length, -1)), labels)
+        # attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels[:29])
+        # loop_plotter(tf.reshape(model.layers[1].attention_weights[0])
+        print(tf.shape(model.layers[1].attention_weights))
+        loop_plotter(model.layers[1].attention_weights)
+
     else:
         pass
 
