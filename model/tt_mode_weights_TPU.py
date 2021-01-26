@@ -158,7 +158,8 @@ class EncoderLayer(kr.layers.Layer):
 
         z = tf.concat(zs, axis=-1)
         aww = tf.stack(aw_list, axis=0)
-        self.attention_weights.assign(aww)
+        actual_batch_size = tf.shape(aww)[1]
+        self.attention_weights[:,:actual_batch_size,:,:,:].assign(aww)
 
         z = tf.matmul(z, self.wo)
 
@@ -283,6 +284,7 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def from_config(cls, config):
         return cls(**config)
 
+
 def custom_loss_function(lambada):
     def mse_loss_function(y_true, y_pred):
         loss = tf.math.reduce_mean(tf.square(y_true - y_pred)) + lambada * tf.square(
@@ -311,16 +313,16 @@ if __name__ == '__main__':
     softmax_type = 3
     input_length = 16
     lag = 4
-    epoch = 1  # 100
+    epoch = 200  # 100
 
     learning_rate = 0.0001
-    head_num = 4
-    d_model = 32
-    dense_units = 128
-    batch_size = 64
+    head_num = 32
+    d_model = 256
+    dense_units = 512
+    batch_size = 32
 
-    num_examples = 2 * batch_size
-    num_valid_examples = 1 * batch_size
+    num_examples = 35000 # 2 * batch_size
+    num_valid_examples = 1324 # 1 * batch_size
     initializer = 'RandomNormal'
 
     train, test = dataset_tools.split.split_train_test(dataset)
@@ -353,11 +355,8 @@ if __name__ == '__main__':
         kr.Input(shape=input_shape),
         PositionalEncoding(),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
@@ -376,7 +375,7 @@ if __name__ == '__main__':
     # Callbacks
     print_attention_weights = kr.callbacks.LambdaCallback(
         on_train_end=lambda batch: print(model.layers[1].attention_weights))
-    early_stopping = kr.callbacks.EarlyStopping(patience=10,
+    early_stopping = kr.callbacks.EarlyStopping(patience=2,
                                                 restore_best_weights=True,
                                                 verbose=1)
 
