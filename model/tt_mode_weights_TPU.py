@@ -158,8 +158,10 @@ class EncoderLayer(kr.layers.Layer):
 
         z = tf.concat(zs, axis=-1)
         aww = tf.stack(aw_list, axis=0)
-        actual_batch_size = tf.shape(aww)[1]
-        self.attention_weights[:,:actual_batch_size,:,:,:].assign(aww)
+        # For any size of sample (not available in TPU):
+        # actual_batch_size = tf.shape(aww)[1]
+        # self.attention_weights[:,:actual_batch_size,:,:,:].assign(aww)
+        self.attention_weights.assign(aww)
 
         z = tf.matmul(z, self.wo)
 
