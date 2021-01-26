@@ -343,10 +343,12 @@ class Transformer(tf.keras.Model):
             trainingTime=time.time() - start
             print(f'Time taken for 1 epoch: {trainingTime} secs\n')
 
-            callbacks.save_checkpoint(epoch)
-            callbacks.store_data('MSE', train_mse.result(), epoch, 'train')
-            callbacks.store_data('MAE', train_mae.result(), epoch, 'train')
-            callbacks.store_data('Training time', trainingTime, epoch, 'train')
+
+            if callbacks is not None:
+                callbacks.save_checkpoint(epoch)
+                callbacks.store_data('MSE', train_mse.result(), epoch, 'train')
+                callbacks.store_data('MAE', train_mae.result(), epoch, 'train')
+                callbacks.store_data('Training time', trainingTime, epoch, 'train')
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __init__(self, d_model, warmup_steps=4000):
