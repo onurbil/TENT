@@ -8,9 +8,9 @@ import tensorflow.keras as kr
 import vanilla_transformer.transformer as vt
 import visualization_tools.visualization as results
 
+
 def prepare_dataset(input_length, prediction_time, batch_size,
                     dataset_path, test_size, valid_size, dataset_limit=None):
-
     dataset = np.load(dataset_path, allow_pickle=True)
     dataset = np.reshape(dataset, (dataset.shape[0], dataset.shape[1] * dataset.shape[2]))
     if dataset_limit is not None:
@@ -56,32 +56,33 @@ def run_full_measurements_experiment(input_length, prediction_time,
                                      epochs, batch_size,
                                      dataset_path, test_size, valid_size, dataset_limit=None,
                                      save_checkpoints=True):
-
     train_x, train_y, valid_x, valid_y, test_x, test_y = prepare_dataset(input_length, prediction_time, batch_size,
                                                                          dataset_path, test_size, valid_size,
                                                                          dataset_limit)
+
+    train_x = train_x[:100, ...]
+    train_y = train_y[:100, ...]
     input_size = train_x.shape[-1]
     output_size = train_x.shape[-1]
 
     transformer = vt.Transformer(input_size, num_layers, d_model, num_heads, dff, input_length, output_size,
                                  rate=dropout_rate)
+    transformer.compile()
 
     learning_rate = vt.CustomSchedule(d_model)
     optimizer = kr.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 
-    callbacks = results.callbacks(transformer, optimizer, './tb_logs/', save_checkpoints)
-    # if a checkpoint exists, restore the latest checkpoint.
-    # if ckpt_manager.latest_checkpoint:
-    #   ckpt.restore(ckpt_manager.latest_checkpoint)
-    #   print ('Latest checkpoint restored!!')
+    early_stopping = kr.callbacks.EarlyStopping(min_delta=.01, patience=10, restore_best_weights=True, verbose=1)
 
-    transformer.fit(train_x,
-                    train_y,
+    transformer.fit(train_x, train_y,
+                    validation_data=(valid_x, valid_y),
                     epochs=epochs,
                     optimizer=optimizer,
                     loss=kr.losses.MeanSquaredError(),
                     metrics={'mse': kr.metrics.mse, 'mae': kr.metrics.mae},
-                    callbacks=callbacks)
+                    callbacks=[early_stopping])
+
+    transformer.summary()
 
     pred = transformer(test_x[0], False)[0]
     mse = np.mean(kr.metrics.mse(test_y[0], pred))
@@ -92,10 +93,10 @@ def run_full_measurements_experiment(input_length, prediction_time,
 
 
 if __name__ == '__main__':
-    run_full_measurements_experiment(input_length=10, prediction_time=1,
-                                     num_layers=4, d_model=64, dff=64, num_heads=8, dropout_rate=.1,
-                                     epochs=50, batch_size=32,
-                                     dataset_path='../../processed_dataset/dataset_tensor.npy',
-                                     test_size=24 * 365, valid_size=24 * 365,
-                                     save_checkpoints=False)
-
+    transformer, (mse, mae) = run_full_measurements_experiment(input_length=10, prediction_time=1,
+                                                               num_layers=4, d_model=64, dff=64, num_heads=8,
+                                                               dropout_rate=.1,
+                                                               epochs=20, batch_size=32,
+                                                               dataset_path='../../processed_dataset/dataset_tensor.npy',
+                                                               test_size=24 * 365, valid_size=24 * 365,
+                                                               save_checkpoints=False)

@@ -271,6 +271,7 @@ class Transformer(tf.keras.Model):
 
         self.flatten_layer = tf.keras.layers.Flatten()
         self.final_layer = tf.keras.layers.Dense(output_size, activation='sigmoid')
+        self.stop_training = False
 
     def call(self, inp, training):
         enc_output, attention_weights = self.encoder(inp, training, None)  # (batch_size, inp_seq_len, d_model)
@@ -280,23 +281,26 @@ class Transformer(tf.keras.Model):
 
         return final_output, attention_weights
 
-    def fit(self, train_x, train_y, epochs, optimizer, loss, metrics, callbacks):
+    def fit(self, train_x, train_y, epochs, optimizer, loss, validation_data=None, metrics=None, callbacks=None):
+        self.stop_training = False
+        logs = {}
 
-        train_loss = kr.metrics.Mean(name='train_loss')
-        train_mse = kr.metrics.Mean(name='train_mse')
-        train_mae = kr.metrics.Mean(name='train_mae')
+        train_loss = kr.metrics.Mean(name='loss')
+        train_metrics = None
+        if metrics is not None:
+            train_metrics = [kr.metrics.Mean(name=f'{m}') for m in metrics]
 
-        def loss_function(real, pred):
-            loss_ = loss(real, pred)
-            return tf.reduce_sum(loss_)
+        val_loss = None
+        val_metrics = None
+        if validation_data is not None:
+            val_loss = kr.metrics.Mean(name='val_loss')
+            if metrics is not None:
+                val_metrics = [kr.metrics.Mean(name=f'val_{m}') for m in metrics]
 
-        def mse_function(real, pred):
-            mse = metrics['mse'](real, pred)
-            return mse
-
-        def mae_function(real, pred):
-            mae = metrics['mae'](real, pred)
-            return mae
+        if callbacks is not None:
+            for callback in callbacks:
+                callback.set_model(self)
+                callback.on_train_begin()
 
         train_step_signature = [
             tf.TensorSpec(shape=train_x.shape[1:], dtype=tf.float32),
@@ -307,48 +311,92 @@ class Transformer(tf.keras.Model):
         def train_step(inp, tar):
             with tf.GradientTape() as tape:
                 predictions, _ = self(inp, True)
-                loss = loss_function(tar, predictions)
+                loss_value = loss(tar, predictions)
 
-            gradients = tape.gradient(loss, self.trainable_variables)
+            gradients = tape.gradient(loss_value, self.trainable_variables)
             optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-            train_loss(loss)
-            train_mse(mse_function(tar, predictions))
-            train_mae(mae_function(tar, predictions))
+
+            train_loss(loss_value)
+            if metrics is not None:
+                for m, tm in zip(metrics.values(), train_metrics):
+                    tm(m(tar, predictions))
 
         for epoch in range(epochs):
+            logs.clear()
+
             start = time.time()
 
             train_loss.reset_states()
-            train_mse.reset_states()
-            train_mae.reset_states()
+            if metrics is not None:
+                for tm in train_metrics:
+                    tm.reset_states()
 
-            # inp -> portuguese, tar -> english
             for (batch, (inp, tar)) in enumerate(zip(train_x, train_y)):
                 train_step(inp, tar)
 
                 if batch % 50 == 0:
-                    print(f'Epoch {epoch + 1} / {epochs} Batch {batch} Loss {train_loss.result():.4f} '
-                          f'MSE {train_mse.result():.4f} MAE {train_mae.result():.4f}')
+                    self.print_batch(epoch, epochs, batch, train_loss, train_metrics)
 
-            self.save_weights('./checkpoints/windspeed_owndata_lag4')
+            logs['loss'] = train_loss.result()
+            if train_metrics is not None:
+                for tm in train_metrics:
+                    logs[tm.name] = tm.result()
 
+            if validation_data is not None:
+                val_loss.reset_states()
+                if metrics is not None:
+                    for vm in val_metrics:
+                        vm.reset_states()
 
-            #callbacks.save_checkpoint(epoch)
+                for valid_x, valid_y in zip(validation_data[0], validation_data[1]):
+                    valid_predictions, _ = self(valid_x, False)
+                    valid_loss_value = loss(valid_y, valid_predictions)
+                    val_loss(valid_loss_value)
 
-            #callbacks.store_data('MSE', train_mse.result(), epoch, 'train')
-            #callbacks.store_data('MAE', train_mae.result(), epoch, 'train')
+                    if metrics is not None:
+                        for m, vm in zip(metrics.values(), val_metrics):
+                            vm(m(valid_y, valid_predictions))
 
-            print(f'Epoch {epoch + 1} / {epochs} Loss {train_loss.result():.4f} '
-                  f'MSE {train_mse.result():.4f} MAE {train_mae.result():.4f}')
-            trainingTime=time.time() - start
-            print(f'Time taken for 1 epoch: {trainingTime} secs\n')
+                logs[val_loss.name] = val_loss.result()
+                if val_metrics is not None:
+                    for vm in val_metrics:
+                        logs[vm.name] = vm.result()
 
+            self.print_epoch(epoch, epochs, train_loss, train_metrics, val_loss, val_metrics)
+            training_time = time.time() - start
+            print(f'Time taken for 1 epoch: {training_time} secs\n')
 
             if callbacks is not None:
-                callbacks.save_checkpoint(epoch)
-                callbacks.store_data('MSE', train_mse.result(), epoch, 'train')
-                callbacks.store_data('MAE', train_mae.result(), epoch, 'train')
-                callbacks.store_data('Training time', trainingTime, epoch, 'train')
+                for callback in callbacks:
+                    callback.on_epoch_end(epoch, logs)
+
+            if self.stop_training:
+                print('Model stop_training set to True. Stopping!')
+                break
+
+    def print_batch(self, epoch, epochs, batch, train_loss, train_metrics):
+        train_string = f'{train_loss.name}: {train_loss.result():.4f}'
+        if train_metrics is not None:
+            for tm in train_metrics:
+                train_string += f' - {tm.name}: {tm.result():.4f}'
+
+        print(f'{epoch + 1} / {epochs} - Batch {batch} - {train_string}')
+
+    def print_epoch(self, epoch, epochs, train_loss, train_metrics, valid_loss, valid_metrics):
+        train_string = f'{train_loss.name}: {train_loss.result():.4f}'
+        if train_metrics is not None:
+            for tm in train_metrics:
+                train_string += f' - {tm.name}: {tm.result():.4f}'
+
+        valid_string = ''
+        if valid_loss is not None:
+            valid_string += f' - {valid_loss.name}: {valid_loss.result():.4f}'
+            if valid_metrics is not None:
+                for vm in valid_metrics:
+                    valid_string += f' - {vm.name}: {vm.result():.4f}'
+
+        print(f'Epoch {epoch + 1} / {epochs} {train_string}{valid_string}')
+
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __init__(self, d_model, warmup_steps=4000):
