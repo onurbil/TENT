@@ -125,8 +125,8 @@ class EncoderLayer(kr.layers.Layer):
         if self.softmax_type == 3:
             attention_shape = (self.head_num, self.batch_size, self.input_length, self.input_length, input_shape[-2])
 
-        self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=attention_shape, dtype=tf.float32),
-                                             trainable=False)
+        # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=attention_shape, dtype=tf.float32),
+        #                                      trainable=False)
 
         # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(
         #     shape=(self.head_num,0,self.input_length, self.input_length),
@@ -158,9 +158,12 @@ class EncoderLayer(kr.layers.Layer):
 
         z = tf.concat(zs, axis=-1)
         aww = tf.stack(aw_list, axis=0)
+        ###
         # For any size of sample (not available in TPU):
         # actual_batch_size = tf.shape(aww)[1]
         # self.attention_weights[:,:actual_batch_size,:,:,:].assign(aww)
+        ###
+        tf.print(tf.shape(aww))
         self.attention_weights.assign(aww)
 
         z = tf.matmul(z, self.wo)
@@ -319,11 +322,11 @@ if __name__ == '__main__':
 
     learning_rate = 0.0001
     head_num = 32
-    d_model = 256
+    d_model = 32
     dense_units = 512
     batch_size = 32
 
-    num_examples = 35000 # 2 * batch_size
+    num_examples = 100 # 2 * batch_size
     num_valid_examples = 1324 # 1 * batch_size
     initializer = 'RandomNormal'
 
@@ -375,8 +378,8 @@ if __name__ == '__main__':
     y_train = y_train[-num_examples:]
 
     # Callbacks
-    print_attention_weights = kr.callbacks.LambdaCallback(
-        on_train_end=lambda batch: print(model.layers[1].attention_weights))
+    # print_attention_weights = kr.callbacks.LambdaCallback(
+    #     on_train_end=lambda batch: print(model.layers[1].attention_weights))
     early_stopping = kr.callbacks.EarlyStopping(patience=2,
                                                 restore_best_weights=True,
                                                 verbose=1)
@@ -389,23 +392,23 @@ if __name__ == '__main__':
         callbacks=[early_stopping]
     )
 
-    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
+    # labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
 
-    if (softmax_type == 1 or softmax_type == 2):
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
-
-    elif softmax_type == 3:
-        from common.variables import city_labels
-        # attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels[:29])
-        # loop_plotter(tf.reshape(model.layers[1].attention_weights[0])
-        print(tf.shape(model.layers[1].attention_weights))
-        loop_plotter(model.layers[1].attention_weights)
-
-    else:
-        pass
+    # if (softmax_type == 1 or softmax_type == 2):
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
+    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
+    #
+    # elif softmax_type == 3:
+    #     from common.variables import city_labels
+    #     # attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels[:29])
+    #     # loop_plotter(tf.reshape(model.layers[1].attention_weights[0])
+    #     print(tf.shape(model.layers[1].attention_weights))
+    #     loop_plotter(model.layers[1].attention_weights)
+    #
+    # else:
+    #     pass
 
     preds = []
     for i in range(x_valid.shape[0]):
@@ -444,4 +447,3 @@ if __name__ == '__main__':
     mae = kr.metrics.mae(y_test.numpy().flatten(), pred.flatten())
     print("\n\n######################## Results ##########################################")
     print(f'test mae: {np.mean(mae)}')
-
