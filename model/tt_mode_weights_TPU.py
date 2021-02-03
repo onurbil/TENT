@@ -125,8 +125,8 @@ class EncoderLayer(kr.layers.Layer):
         if self.softmax_type == 3:
             attention_shape = (self.head_num, self.batch_size, self.input_length, self.input_length, input_shape[-2])
 
-        # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=attention_shape, dtype=tf.float32),
-        #                                      trainable=False)
+        self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=attention_shape, dtype=tf.float32),
+                                             trainable=False)
 
         # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(
         #     shape=(self.head_num,0,self.input_length, self.input_length),
@@ -360,8 +360,8 @@ if __name__ == '__main__':
         kr.Input(shape=input_shape),
         PositionalEncoding(),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
@@ -378,8 +378,8 @@ if __name__ == '__main__':
     y_train = y_train[-num_examples:]
 
     # Callbacks
-    # print_attention_weights = kr.callbacks.LambdaCallback(
-    #     on_train_end=lambda batch: print(model.layers[1].attention_weights))
+    print_attention_weights = kr.callbacks.LambdaCallback(
+        on_train_end=lambda batch: print(model.layers[1].attention_weights))
     early_stopping = kr.callbacks.EarlyStopping(patience=2,
                                                 restore_best_weights=True,
                                                 verbose=1)
@@ -392,23 +392,23 @@ if __name__ == '__main__':
         callbacks=[early_stopping]
     )
 
-    # labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
+    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
 
-    # if (softmax_type == 1 or softmax_type == 2):
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
-    #
-    # elif softmax_type == 3:
-    #     from common.variables import city_labels
-    #     # attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels[:29])
-    #     # loop_plotter(tf.reshape(model.layers[1].attention_weights[0])
-    #     print(tf.shape(model.layers[1].attention_weights))
-    #     loop_plotter(model.layers[1].attention_weights)
-    #
-    # else:
-    #     pass
+    if (softmax_type == 1 or softmax_type == 2):
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
+
+    elif softmax_type == 3:
+        from common.variables import city_labels
+        # attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels[:29])
+        # loop_plotter(tf.reshape(model.layers[1].attention_weights[0])
+        print(tf.shape(model.layers[1].attention_weights))
+        loop_plotter(model.layers[1].attention_weights)
+
+    else:
+        pass
 
     preds = []
     for i in range(x_valid.shape[0]):
