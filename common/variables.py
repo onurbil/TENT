@@ -26,4 +26,9 @@ weather_desc_labels = {'shower drizzle':0, 'freezing rain':1, 'volcanic ash':2,
 'proximity thunderstorm':49, 'light intensity drizzle':50, 'dust':51,
 'proximity thunderstorm with drizzle':52, 'very heavy rain':53}
 
+
+# DATASET_SAMPLE_SIZE is the row size in the dataset (for geolocation.py):
+DATASET_SAMPLE_SIZE = 45253
+
+# Sum of train and validation samples:
 TRAIN_VAL_SIZE = 36333

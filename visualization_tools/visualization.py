@@ -9,7 +9,6 @@ import seaborn as sns
 from matplotlib.patches import Rectangle
 from matplotlib import cm
 from common.variables import city_labels
-from debugging_tools import *
 
 # from mpl_toolkits.mplot3d import Axes3D
 
@@ -41,10 +40,10 @@ def attention_plotter(attention_weights, plot_title, x_axis, y_axis, x_labels, y
     max_attention = np.argmax(attention_weights)
     row = max_attention // len(x_labels)
     col = max_attention % len(x_labels)
-    
-    fig, ax = plt.subplots(figsize=(20,12)) 
+
+    fig, ax = plt.subplots(figsize=(20,12))
     ax = sns.heatmap(attention_weights, annot=True, cmap='Blues')
-    
+
     plt.xlabel(x_axis, fontsize=14)
     plt.ylabel(y_axis, fontsize=14)
     plt.title(plot_title, fontsize=14)
@@ -55,34 +54,34 @@ def attention_plotter(attention_weights, plot_title, x_axis, y_axis, x_labels, y
     # Draw rectangle around the cell with maximum attention:
     ax.add_patch(Rectangle((col,row),1,1,
                  fill=False, edgecolor='red', lw=3))
-    
-        
-    if save:    
+
+
+    if save:
         fig.savefig(save_path)
     plt.close()
     # plt.show()
 
 
 def loop_plotter(array):
-    
+
     y_labels = np.arange(array.shape[-2])
     x_labels = city_labels[:array.shape[-1]]
     folder_name = 'visualization'
-    
+
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
 
     for i in range(array.shape[0]):
-        
+
         arr = array[i][0]
-    
+
         for j in range(arr.shape[0]):
-            
+
             save_path = os.path.join(folder_name, 'attention_head{}_time{}.png'.format(i,j))
             attention_plotter(attention_weights=arr[j], plot_title='Attention weights of head: {}, time step: {}'.format(i,j),
-                              x_axis='City', y_axis='Time step', 
-                              x_labels=x_labels, y_labels=y_labels, 
+                              x_axis='City', y_axis='Time step',
+                              x_labels=x_labels, y_labels=y_labels,
                               save=True, save_path=save_path)
 
 
@@ -92,8 +91,8 @@ def attention_3d_plotter(array, x_labels):
     assert array.shape[2] == len(x_labels)
     time_length = array.shape[0]
     cities = array.shape[2]
-    
-    array = array.reshape((cities,time_length,time_length)) 
+
+    array = array.reshape((cities,time_length,time_length))
 
     x_axis = np.arange(0,cities+1).reshape(cities+1,1)
     y_axis = np.arange(0,time_length+1)
@@ -110,30 +109,30 @@ def attention_3d_plotter(array, x_labels):
 
     plt.xticks(np.arange(cities)+0.5)
     plt.yticks(np.arange(time_length)+0.5)
-        
+
     ax.set_zticks(np.arange(time_length+1))
     ax.set_xticklabels(city_labels, rotation=90)
     ax.set_yticklabels(np.arange(1,time_length+1))
     ax.set_zticklabels(np.arange(1,time_length+1))
-    
+
     for label in ax.get_yticklabels()[::2]:
         label.set_visible(False)
     for label in ax.get_zticklabels()[::2]:
         label.set_visible(False)
-    
+
     for i in range(time_length):
         grid_z = np.ones((cities+1,time_length+1)) * i
-        
-        scam.set_array([])  
+
+        scam.set_array([])
         surf = ax.plot_surface(grid_x, grid_y, grid_z,
-            facecolors  = scam.to_rgba(array[:,i,:]), 
+            facecolors  = scam.to_rgba(array[:,i,:]),
             antialiased = True, cmap='Blues',
             rstride=1, cstride=1, alpha=None)
-            
+
     fig.colorbar(scam, shrink=0.5, aspect=5)
-    
-    # """                                                               
-    # Scaling is done from here...                                                                                                                           
+
+    # """
+    # Scaling is done from here...
     # """
     # x_scale=2
     # y_scale=3
@@ -142,12 +141,12 @@ def attention_3d_plotter(array, x_labels):
     # scale=scale*(1.0/scale.max())
     # print(scale)
     # scale[3,3]=1
-    # 
+    #
     # def short_proj():
     #   return np.dot(Axes3D.get_proj(ax), scale)
-    # 
+    #
     # ax.get_proj=short_proj
-    
+
     plt.show()
 
 
@@ -187,6 +186,3 @@ class callbacks():
         if self.save_checkpoints and (epoch + 1) % 2 == 0:
             ckpt_save_path = self.ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epoch + 1, ckpt_save_path))
-
-
-

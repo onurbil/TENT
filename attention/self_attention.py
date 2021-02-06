@@ -10,7 +10,6 @@ import tensorflow.keras.backend
 from common.paths import PROCESSED_DATASET_DIR
 from dataset_tools.split import split_train_test, get_xy
 from visualization_tools.visualization import visualize_pos_encoding
-from debugging_tools import *
 
 
 """
@@ -71,7 +70,7 @@ def qkv_matrices(x, w_qkv):
 
     # wv = tf.random.normal([x.shape[2],d_model], mean=0.0, stddev=1.0)
     v = tf.matmul(x,wv)
-    
+
     return q,k,v
 
 def self_attention(q,k,v,mask=None):
@@ -86,19 +85,19 @@ def self_attention(q,k,v,mask=None):
     dk = tf.cast(tf.shape(k)[-1], tf.float32)
     z = z / tf.math.sqrt(dk)
     if mask is not None:
-        z += (mask * -1e9) 
+        z += (mask * -1e9)
     # !!! Test reduce_sum vs reduce_mean
-    z = tf.reduce_sum(z, axis=[-1, -2])  
-    se = tf.nn.softmax(z, axis=-1) 
+    z = tf.reduce_sum(z, axis=[-1, -2])
+    se = tf.nn.softmax(z, axis=-1)
     se = tf.expand_dims(se, -1)
     se = tf.expand_dims(se, -1)
 
-    # Option 1 (Comment option 1 or option 2): 
-    # ve = tf.broadcast_to(v, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])    
+    # Option 1 (Comment option 1 or option 2):
+    # ve = tf.broadcast_to(v, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])
     # se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[2]])
     # z = tf.multiply(se, ve)
     ##
-    # Option 2:     
+    # Option 2:
     se = tf.broadcast_to(se, [v.shape[0], v.shape[0], v.shape[1], v.shape[1]])
     z = tf.matmul(se,v)
     ##
@@ -110,7 +109,7 @@ def self_attention(q,k,v,mask=None):
 def multihead_self_attention(x,head_num, w_qkvs, wo):
     """
     Run self_attention() 'head_num' different times and concatenate to axis=2.
-    Initialize wo matrix. 
+    Initialize wo matrix.
     Later this function will be embedded to self_attention as 4th dimension
     for a better runtime.
     x: input
@@ -119,11 +118,11 @@ def multihead_self_attention(x,head_num, w_qkvs, wo):
     """
     z_all = tf.zeros([x.shape[0],x.shape[1],0])
     for i in range(head_num):
-        
+
         q,k,v = qkv_matrices(x, w_qkvs[i])
         z = self_attention(q,k,v)
         z_all = tf.concat([z_all, z], axis=2)
-    
+
     # wo = tf.random.normal([z_all.shape[0],z_all.shape[2],x.shape[2]], mean=0.0, stddev=1.0)
     z = tf.matmul(z_all,wo)
     return z
@@ -217,12 +216,12 @@ if __name__ == '__main__':
                        weights=final_weights, activation='tanh')
 
     print(f'pred: {pred.shape}')
-    
-    
+
+
     # Visualization Test:
     # test = np.zeros((64,24,216))
     # bb = positional_encoding(test.shape[0],test.shape, broadcast=True)
-    # 
+    #
     # bb = bb.numpy()
     # print(bb.shape)
     # bb = bb[0].reshape((bb.shape[1],-1))

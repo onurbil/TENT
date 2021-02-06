@@ -4,7 +4,6 @@ import pandas as pd
 from pathlib import Path
 from common.paths import WORKING_DIR, PARENT_WORKING_DIR, DATASET_DIR, PROCESSED_DATASET_DIR
 from common.variables import TRAIN_VAL_SIZE
-from debugging_tools import *
 
 """
 Replace nan values in the dataset with interpolation. The nan values in
@@ -29,7 +28,6 @@ def fill_nan_values(input_folder, output_folder, files, train_val, norm=True):
         np_table = df_table.to_numpy()
         norm_table = np_table[:train_val]
 
-        print(norm_table.shape)
 
         if norm:
             max_val = norm_table[:,1:].max()

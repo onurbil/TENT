@@ -1,6 +1,4 @@
 import numpy as np
-# import common.paths
-# import os
 
 """
 First split the dataset in train and test array with 'split_train_test'.
@@ -58,14 +56,3 @@ def get_xy(array, input_length=16, pred_time=4):
     y = recurrent[:, -1, :]
 
     return x, y
-
-
-# def main():
-#
-#     filename = 'dataset_tensor.npy'
-#     file_path = os.path.join(common.paths.PROCESSED_DATASET_DIR, filename)
-#     dataset = np.load(file_path, allow_pickle=True)
-#     print(dataset.shape)
-#
-# if __name__ == "__main__":
-#     main()

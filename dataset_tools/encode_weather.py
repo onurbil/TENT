@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 from common.paths import WORKING_DIR, PARENT_WORKING_DIR, DATASET_DIR, PROCESSED_DATASET_DIR
 from common.variables import weather_desc_labels, TRAIN_VAL_SIZE
-from debugging_tools import *
+
 
 """
 Encode the categories in the weather_description.csv:

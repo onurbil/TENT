@@ -1,7 +1,6 @@
 import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-from debugging_tools import *
 
 import numpy as np
 import tensorflow as tf
@@ -10,7 +9,7 @@ import matplotlib.pyplot as plt
 import dataset_tools.split
 import attention.self_attention
 import common.paths
-from visualization_tools.visualization import visualize_pos_encoding, attention_plotter, attention_3d_plotter
+from visualization_tools.visualization import visualize_pos_encoding, attention_plotter, attention_3d_plotter, loop_plotter
 from tensorflow.keras.callbacks import LambdaCallback
 
 
@@ -20,18 +19,12 @@ def get_angles(pos, i, d_model):
 
 
 class PositionalEncoding(kr.layers.Layer):
-    def __init__(self,
-                 broadcast,
-                 **kwargs):
+    def __init__(self, **kwargs):
         super(PositionalEncoding, self).__init__(**kwargs)
-        self.broadcast = broadcast
 
     def build(self, input_shape):
         self.position = input_shape[-3]
         self.angle_dim = input_shape[-2]
-        if not self.broadcast:
-            self.angle_dim *= input_shape[-1]
-
         self.model_shape = input_shape
         self.batch_size = input_shape[0]
 
@@ -42,22 +35,18 @@ class PositionalEncoding(kr.layers.Layer):
         angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
         angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
 
-        if self.broadcast:
-            angle_rads = np.broadcast_to(np.expand_dims(angle_rads, -1), input_data.shape[1:])
-        else:
-            new_shape = angle_rads.shape[:-1] + self.model_shape
-            angle_rads = np.reshape(angle_rads, new_shape)
+        angle_rads = np.broadcast_to(np.expand_dims(angle_rads, -1), input_data.shape[1:])
 
         pos_encoding = tf.broadcast_to(angle_rads, tf.shape(input_data))
         pos_encoding = tf.cast(pos_encoding, input_data.dtype)
 
         return tf.math.add(input_data, pos_encoding)
 
-    def get_config(self):
-        config = {
-            'broadcast': self.broadcast,
-        }
-        return config
+    # def get_config(self):
+    #     config = {
+    #         'broadcast': self.broadcast,
+    #     }
+    #     return config
 
     @classmethod
     def from_config(cls, config):
@@ -72,6 +61,8 @@ class EncoderLayer(kr.layers.Layer):
                  dense_units,
                  initializer,
                  softmax_type,
+                 batch_size,
+                 save_attention=False,
                  **kwargs):
         super(EncoderLayer, self).__init__(**kwargs)
 
@@ -85,6 +76,8 @@ class EncoderLayer(kr.layers.Layer):
         self.initializer1 = initializer
         self.initializer = tf.keras.initializers.get(initializer)
         self.softmax_type = softmax_type
+        self.batch_size = batch_size
+        self.save_attention = save_attention
 
         self.wq = None
         self.wk = None
@@ -101,19 +94,19 @@ class EncoderLayer(kr.layers.Layer):
 
         self.z_all = tf.zeros([input_shape[-2], input_shape[-1], 0])
         self.wq = self.add_weight(
-            shape=(input_shape[-1], self.d_model),
+            shape=(input_shape[-2], input_shape[-1], self.d_model),
             initializer=self.initializer,
             name="wq",
             trainable=True,
         )
         self.wk = self.add_weight(
-            shape=(input_shape[-1], self.d_model),
+            shape=(input_shape[-2], input_shape[-1], self.d_model),
             initializer=self.initializer,
             name="wk",
             trainable=True,
         )
         self.wv = self.add_weight(
-            shape=(input_shape[-1], self.d_model),
+            shape=(input_shape[-2], input_shape[-1], self.d_model),
             initializer=self.initializer,
             name="wv",
             trainable=True,
@@ -127,23 +120,27 @@ class EncoderLayer(kr.layers.Layer):
         self.dense_out = tf.keras.layers.Dense(tf.reduce_prod(input_shape[-3:]), activation='relu')
         self.reshape = tf.keras.layers.Reshape(input_shape[-3:])
 
+        if self.softmax_type in (1, 2):
+            attention_shape = self.head_num, self.batch_size, self.input_length, self.input_length
+
+        if self.softmax_type == 3:
+            attention_shape = (self.head_num, self.batch_size, self.input_length, self.input_length, input_shape[-2])
+
+        self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=attention_shape, dtype=tf.float32),
+                                             trainable=False)
+
+        # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(
+        #     shape=(self.head_num,0,self.input_length, self.input_length),
+        #     dtype=tf.float32),
+        #     trainable=False)
         self.d_k = int(self.d_model / self.head_num)
-        
-        
-        # if self.softmax_type in (1,2):
-        #     attention_shape = self.head_num,0,self.input_length, self.input_length
-        #
-        # if self.softmax_type == 3:
-        #     attention_shape = (self.head_num,0,self.input_length, self.input_length,input_shape[-2])
-        #
-        # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=attention_shape,dtype=tf.float32), trainable=False)
-        # # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=(self.head_num,0,self.input_length, self.input_length), dtype=tf.float32), trainable=False)
 
     def call(self, inputs):
-
-        q = tf.matmul(inputs, self.wq)
-        k = tf.matmul(inputs, self.wk)
-        v = tf.matmul(inputs, self.wv)
+        inputs = tf.expand_dims(inputs, -2)
+        q = tf.squeeze(tf.matmul(inputs, self.wq), -2)
+        k = tf.squeeze(tf.matmul(inputs, self.wk), -2)
+        v = tf.squeeze(tf.matmul(inputs, self.wv), -2)
+        inputs = tf.squeeze(inputs, -2)
 
         zs = []
         aw_list = []
@@ -161,8 +158,15 @@ class EncoderLayer(kr.layers.Layer):
             aw_list.append(aw)
 
         z = tf.concat(zs, axis=-1)
-        #aww = tf.stack(aw_list, axis=0)
-        #self.attention_weights.assign(aww)
+        ###
+        # For any size of sample (not available in TPU):
+        # actual_batch_size = tf.shape(aww)[1]
+        # self.attention_weights[:,:actual_batch_size,:,:,:].assign(aww)
+        ###
+        # tf.print(tf.shape(aww))
+        if self.save_attention:
+            aww = tf.stack(aw_list, axis=0)
+            self.attention_weights.assign(aww)
 
         z = tf.matmul(z, self.wo)
 
@@ -246,6 +250,7 @@ class EncoderLayer(kr.layers.Layer):
             'dense_units': self.dense_units,
             'initializer': self.initializer1,
             'softmax_type': self.softmax_type,
+            'save_attention': self.save_attention,
         }
         return config
 
@@ -287,6 +292,7 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def from_config(cls, config):
         return cls(**config)
 
+
 def custom_loss_function(lambada):
     def mse_loss_function(y_true, y_pred):
         loss = tf.math.reduce_mean(tf.square(y_true - y_pred)) + lambada * tf.square(
@@ -312,19 +318,19 @@ if __name__ == '__main__':
     ###### ALL PARAMETERS HERE######:
     """
 
-    softmax_type = 2
+    softmax_type = 3
     input_length = 16
     lag = 4
-    epoch = 100  # 100
+    epoch = 200  # 100
 
-    learning_rate = 0.001
-    head_num = 16
+    learning_rate = 0.0001
+    head_num = 32
     d_model = 32
-    dense_units = 64
-    batch_size = 64
+    dense_units = 512
+    batch_size = 32
 
-    num_examples = 10000
-    num_valid_examples = 500
+    num_examples = 100 # 2 * batch_size
+    num_valid_examples = 1324 # 1 * batch_size
     initializer = 'RandomNormal'
 
     train, test = dataset_tools.split.split_train_test(dataset)
@@ -337,11 +343,11 @@ if __name__ == '__main__':
     x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
     y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
 
-    # Choosing first 29 cities
-    x_train = x_train[:, :, :29, :]
-    y_train = y_train[:, :29, :]
-    x_test = x_test[:, :, :29, :]
-    y_test = y_test[:, :29, :]
+    # Choosing first 30 cities
+    x_train = x_train[:, :, :30, :]
+    y_train = y_train[:, :30, :]
+    x_test = x_test[:, :, :30, :]
+    y_test = y_test[:, :30, :]
 
     input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
     output_shape = (1, 1)
@@ -355,13 +361,10 @@ if __name__ == '__main__':
 
     model = kr.Sequential([
         kr.Input(shape=input_shape),
-        PositionalEncoding(broadcast=True),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type),
+        PositionalEncoding(),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
@@ -376,11 +379,11 @@ if __name__ == '__main__':
 
     x_train = x_train[-num_examples:]
     y_train = y_train[-num_examples:]
-    
+
     # Callbacks
     print_attention_weights = kr.callbacks.LambdaCallback(
         on_train_end=lambda batch: print(model.layers[1].attention_weights))
-    early_stopping = kr.callbacks.EarlyStopping(patience=10,
+    early_stopping = kr.callbacks.EarlyStopping(patience=2,
                                                 restore_best_weights=True,
                                                 verbose=1)
 
@@ -392,19 +395,23 @@ if __name__ == '__main__':
         callbacks=[early_stopping]
     )
 
-    # labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
-    #
-    # if (softmax_type == 1 or softmax_type == 2):
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
-    #     attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
-    #
-    # elif softmax_type == 3:
-    #     # print(model.layers[1].attention_weights[0][3].numpy())
-    #     attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels)
-    # else:
-    #     pass
+    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
+
+    if (softmax_type == 1 or softmax_type == 2):
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
+        attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
+
+    elif softmax_type == 3:
+        from common.variables import city_labels
+        # attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels[:29])
+        # loop_plotter(tf.reshape(model.layers[1].attention_weights[0])
+        print(tf.shape(model.layers[1].attention_weights))
+        loop_plotter(model.layers[1].attention_weights)
+
+    else:
+        pass
 
     preds = []
     for i in range(x_valid.shape[0]):
@@ -443,4 +450,3 @@ if __name__ == '__main__':
     mae = kr.metrics.mae(y_test.numpy().flatten(), pred.flatten())
     print("\n\n######################## Results ##########################################")
     print(f'test mae: {np.mean(mae)}')
-
