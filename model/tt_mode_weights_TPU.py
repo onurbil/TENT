@@ -63,6 +63,7 @@ class EncoderLayer(kr.layers.Layer):
                  initializer,
                  softmax_type,
                  batch_size,
+                 save_attention=False,
                  **kwargs):
         super(EncoderLayer, self).__init__(**kwargs)
 
@@ -77,6 +78,7 @@ class EncoderLayer(kr.layers.Layer):
         self.initializer = tf.keras.initializers.get(initializer)
         self.softmax_type = softmax_type
         self.batch_size = batch_size
+        self.save_attention = save_attention
 
         self.wq = None
         self.wk = None
@@ -157,14 +159,15 @@ class EncoderLayer(kr.layers.Layer):
             aw_list.append(aw)
 
         z = tf.concat(zs, axis=-1)
-        aww = tf.stack(aw_list, axis=0)
         ###
         # For any size of sample (not available in TPU):
         # actual_batch_size = tf.shape(aww)[1]
         # self.attention_weights[:,:actual_batch_size,:,:,:].assign(aww)
         ###
-        tf.print(tf.shape(aww))
-        self.attention_weights.assign(aww)
+        # tf.print(tf.shape(aww))
+        if self.save_attention:
+            aww = tf.stack(aw_list, axis=0)
+            self.attention_weights.assign(aww)
 
         z = tf.matmul(z, self.wo)
 
@@ -248,6 +251,7 @@ class EncoderLayer(kr.layers.Layer):
             'dense_units': self.dense_units,
             'initializer': self.initializer1,
             'softmax_type': self.softmax_type,
+            'save_attention': self.save_attention,
         }
         return config
 
@@ -340,11 +344,11 @@ if __name__ == '__main__':
     x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
     y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
 
-    # Choosing first 29 cities
-    x_train = x_train[:, :, :29, :]
-    y_train = y_train[:, :29, :]
-    x_test = x_test[:, :, :29, :]
-    y_test = y_test[:, :29, :]
+    # Choosing first 30 cities
+    x_train = x_train[:, :, :30, :]
+    y_train = y_train[:, :30, :]
+    x_test = x_test[:, :, :30, :]
+    y_test = y_test[:, :30, :]
 
     input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
     output_shape = (1, 1)

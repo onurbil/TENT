@@ -1,7 +1,9 @@
 import numpy as np
+# import common.paths
+# import os
 
 """
-First split the dataset in train and test array with 'split_train_test'. 
+First split the dataset in train and test array with 'split_train_test'.
 Then split train and test into x_train, y_train, x_test, y_test with 'get_xy'.
 """
 
@@ -17,7 +19,7 @@ def split_train_test(dataset, tr_batch_count=284, te_batch_count=69,
     dataset: dataset with shape (x,y,z)
     tr_batch_count: Batch count for train data.
     te_batch_count: Batch count for test data.
-    batch_size: Size of each batch.     
+    batch_size: Size of each batch.
     """
     dataset = dataset.reshape(dataset.shape[0], -1)
     train_range = tr_batch_count * batch_size
@@ -28,7 +30,7 @@ def split_train_test(dataset, tr_batch_count=284, te_batch_count=69,
     return train, test
 
 
-def get_xy(array, input_length=24, lag=1):
+def get_xy(array, input_length=16, pred_time=4):
     """
     Make make_x and y arrays from given array:
     x:
@@ -37,22 +39,33 @@ def get_xy(array, input_length=24, lag=1):
     x_3, x_4, x_5, ..., x_n+2
     with n=input_length.
     y:
-    y_(n+lag)
-    y_(n+1+lag)
-    y_(n+2+lag)
+    y_(n+pred_time)
+    y_(n+1+pred_time)
+    y_(n+2+pred_time)
     """
     shape0 = array.shape[0]
     shape1 = array.shape[1]
-    recurrent = np.zeros((shape0, input_length + lag, shape1))
+    recurrent = np.zeros((shape0, input_length + pred_time, shape1))
 
-    for i in range(input_length + lag):
+    for i in range(input_length + pred_time):
         rec = array[i:]
         zeros_arr = np.zeros((shape0, shape1))
         zeros_arr[:shape0 - i, :] = rec
         recurrent[:, i, :] = zeros_arr
 
-    recurrent = recurrent[:-(input_length + lag - 1), :, :]
+    recurrent = recurrent[:-(input_length + pred_time - 1), :, :]
     x = recurrent[:, :input_length]
     y = recurrent[:, -1, :]
 
     return x, y
+
+
+# def main():
+#
+#     filename = 'dataset_tensor.npy'
+#     file_path = os.path.join(common.paths.PROCESSED_DATASET_DIR, filename)
+#     dataset = np.load(file_path, allow_pickle=True)
+#     print(dataset.shape)
+#
+# if __name__ == "__main__":
+#     main()
