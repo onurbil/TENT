@@ -9,7 +9,7 @@ The first and last dates in 'dataset_tensor.npy':
 
 The order of measurements in 'dataset_tensor.npy' and the minimum, maximum values:
 
-0:  day of the year        (min: 1,        max: 366)
+0:  day of the year        (min: 0,        max: 366)
 1:  hour of the day        (min: 0,        max: 23)
 2:  humidity               (min: 5,        max: 100)
 3:  pressure               (min: 800,      max: 1100)

@@ -44,12 +44,18 @@ def dataset_to_tensor(input_folder, output_folder, files):
     city_att_path = os.path.join(input_folder, files[-1])
     city_att = np.load(city_att_path, allow_pickle=True)
     dataset_tensor = np.concatenate((dataset_tensor, city_att), axis=-1)
-    # Add hour of the day
+    # Add hour of the day to dataset
     hod = np.broadcast_to(hod, (dataset_tensor.shape[0], dataset_tensor.shape[1], 1))
     dataset_tensor = np.concatenate((hod, dataset_tensor), axis=-1)
-    # Add day of the year
+    # Add day of the year to dataset
     doy = np.broadcast_to(doy, (dataset_tensor.shape[0], dataset_tensor.shape[1], 1))
     dataset_tensor = np.concatenate((doy, dataset_tensor), axis=-1)
+    # Add max and min to scale.py
+    new_scale_filepath = os.path.join(output_folder, 'scale.npy')
+    scale = np.load(new_scale_filepath, allow_pickle=True)
+    scale = np.append([['hour_of_the_day', 0, 23]], scale, axis=0)
+    scale = np.append([['day_of_the_year', 0, 366]], scale, axis=0)
+    np.save(new_scale_filepath, scale)
 
     # Save dataset_tensor:
     new_filename = 'dataset_tensor'
