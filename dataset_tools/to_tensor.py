@@ -55,6 +55,10 @@ def dataset_to_tensor(input_folder, output_folder, files):
     scale = np.load(new_scale_filepath, allow_pickle=True)
     scale = np.append([['hour_of_the_day', 0, 23]], scale, axis=0)
     scale = np.append([['day_of_the_year', 0, 366]], scale, axis=0)
+    # Change the place of the weather_description.csv in the array:
+    idx = np.array([0, 1, 3, 4, 5, 2, 6, 7])
+    scale = scale[idx]
+
     np.save(new_scale_filepath, scale)
 
     # Save dataset_tensor:
