@@ -35,7 +35,6 @@ def eu_process(input_folder, output_folder, files, train_val):
 
     scale_list = np.array(scale_list)
 
-
     filename = 'eu_dataset_tensor.npy'
     output_filepath = os.path.join(output_folder, filename)
     np.save(output_filepath, np_table)
