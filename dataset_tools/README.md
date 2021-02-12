@@ -61,5 +61,8 @@ The order of cities in 'dataset_tensor.npy':
 35: Jerusalem
 
 
+-----------------------------------------------------------------------------
+
+The 'eu_dataset_tensor.npy' has shape of (5470,18, 18) as (time, cities, features).
 
 

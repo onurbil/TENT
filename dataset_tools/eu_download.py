@@ -2,7 +2,7 @@ import os
 from zipfile import ZipFile
 from tqdm import tqdm
 import requests
-from common.paths import WORKING_DIR, PARENT_WORKING_DIR, DATASET_DIR, ZIP_PATH
+from common.paths import WORKING_DIR, PARENT_WORKING_DIR, EU_DATASET_DIR, EU_ZIP_PATH
 
 
 """
@@ -11,27 +11,6 @@ to the folder structure.
 
 For reference:
 https://stackoverflow.com/questions/38511444/python-download-files-from-google-drive-using-url
-
-Folder structure:
-For reading the dataset and creating the models the folder structure must be as
-following:
-<folder_name> is the parent folder of github repository and may have any name.
-
-<folder_name>
-└─── tensorized_transformers/
-│    └─── main.py
-│    └─── ...
-│
-└─── dataset/
-│    └─── city_attributes.csv
-│    └─── humidity.csv
-│    └─── pressure.csv
-│    └─── temperature.csv
-│    └─── weather_description.csv
-│    └─── wind_direction.csv
-│    └─── wind_speed.csv
-│
-└─── ...
 """
 
 
@@ -64,7 +43,7 @@ def save_response_content(response, destination):
 
     CHUNK_SIZE = 32768
     # Total size of the downlaoded zip file:
-    total_size = 12556386
+    total_size = 1909949
 
     pbar = tqdm(total=total_size, unit='iB', unit_scale=True)
     with open(destination, "wb") as f:
@@ -79,7 +58,7 @@ def save_response_content(response, destination):
 
 def download_dataset(dataset_path, destination):
 
-    file_id = '1CvgryzWKooAtdTtaQ4Rumo9988TePa8-'
+    file_id = '151AkuDSkzWWXnXWvha_ptqlXHzZPj9uO'
     download_file_from_google_drive(file_id, destination)
 
     with ZipFile(destination, 'r') as zipObj:
@@ -92,14 +71,15 @@ def check_dataset(dataset_path, zip_path):
     """
     Checks if dataset exists. If not downloads it.
     """
-    necessary_files = ['city_attributes.csv', 'humidity.csv', 'pressure.csv',
-                       'temperature.csv', 'weather_description.csv',
-                       'wind_direction.csv', 'wind_speed.csv']
+    necessary_files = ['amsterdam.csv', 'barcelona.csv', 'berlin.csv', 'brussels.csv', 'copenhagen.csv', 'dublin.csv', 'frankfurt.csv', 'hamburg.csv',
+             'london.csv', 'luxembourg.csv', 'lyon.csv', 'maastricht.csv', 'malaga.csv', 'marseille.csv', 'munich.csv', 'nice.csv', 'paris.csv', 'rotterdam.csv',]
 
     for file in necessary_files:
+
         file_check = os.path.isfile(os.path.join(dataset_path, file))
 
         if file_check == False:
+            print(file_check)
             download_dataset(dataset_path=dataset_path, destination=zip_path)
             return check_dataset(dataset_path=dataset_path, zip_path=zip_path)
 
@@ -109,10 +89,10 @@ def check_dataset(dataset_path, zip_path):
 
 def main():
 
-    if not os.path.exists(DATASET_DIR):
-        os.makedirs(DATASET_DIR)
+    if not os.path.exists(EU_DATASET_DIR):
+        os.makedirs(EU_DATASET_DIR)
 
-    check_dataset(dataset_path=DATASET_DIR, zip_path=ZIP_PATH)
+    check_dataset(dataset_path=EU_DATASET_DIR, zip_path=EU_ZIP_PATH)
 
 
 if __name__ == "__main__":

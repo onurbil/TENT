@@ -32,3 +32,6 @@ DATASET_SAMPLE_SIZE = 45253
 
 # Sum of train and validation samples:
 TRAIN_VAL_SIZE = 36333
+
+# Sum of train and validation samples:
+EU_TRAIN_VAL_SIZE = 3000
