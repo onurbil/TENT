@@ -22,9 +22,6 @@ def eu_process(input_folder, output_folder, files, train_val):
     np_table = np.moveaxis(np.array(np_table),0,1)[:,:,1:]
     # np_table: time x cities x features:
 
-    print(np_table.shape)
-    exit()
-
     norm_table = np_table[:train_val]
 
     scale_list = []
