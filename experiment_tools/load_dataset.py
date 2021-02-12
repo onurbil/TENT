@@ -8,8 +8,8 @@ import common.paths
 import dataset_tools.split
 
 
-def get_usa_dataset(data_path, lag, step, y_feature, y_city, start_city=0, end_city=30, remove_last_from_test=0,
-                    valid_split=None, split_random=None):
+def get_usa_dataset(data_path, input_length, prediction_time, y_feature, y_city, start_city=0, end_city=30,
+                    remove_last_from_test=0, valid_split=None, split_random=None):
     filename = os.path.join(data_path, 'dataset_tensor.npy')
     dataset = np.load(filename, allow_pickle=True)
 
@@ -17,8 +17,8 @@ def get_usa_dataset(data_path, lag, step, y_feature, y_city, start_city=0, end_c
     city_feature_shape = (dataset.shape[1], dataset.shape[2])
 
     train, test = dataset_tools.split.split_train_test(dataset)
-    x_train, y_train = dataset_tools.split.get_xy(train, input_length=lag, pred_time=step)
-    x_test, y_test = dataset_tools.split.get_xy(test, input_length=lag, pred_time=step)
+    x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, pred_time=prediction_time)
+    x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, pred_time=prediction_time)
 
     print(x_train.shape, y_train.shape)
     if valid_split is not None:
@@ -36,10 +36,22 @@ def get_usa_dataset(data_path, lag, step, y_feature, y_city, start_city=0, end_c
 
     print(f'FULL_x_train.shape: {x_train.shape}')
 
+    params = [
+        ('input_length', input_length),
+        ('prediction_time', prediction_time),
+        ('y_feature', y_feature),
+        ('y_city', y_city),
+        ('start_city', start_city),
+        ('end_city', end_city),
+        ('train_size', x_train.shape[0]),
+        ('test_size', x_test.shape[0]),
+    ]
+
     if valid_split is None:
-        return x_train, y_train, x_test, y_test
+        return (x_train, y_train, x_test, y_test), params
     else:
-        return x_train, y_train, x_valid, y_valid, x_test, y_test
+        params.append(('valid_size', x_valid.shape[0]))
+        return (x_train, y_train, x_valid, y_valid, x_test, y_test), params
 
 
 def prepare_usa_xy(x, y, city_feature_shape, start_city, end_city, y_city, y_feature):
@@ -98,10 +110,12 @@ def reshape_to_batches(Xs, Ys, batch_size):
 
 
 if __name__ == '__main__':
-    Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = get_usa_dataset(data_path=common.paths.PROCESSED_DATASET_DIR,
-                                                             lag=16, step=4, y_feature=4, y_city=0, start_city=0,
-                                                             end_city=30, remove_last_from_test=800, valid_split=1024,
-                                                             split_random=None)
+    (Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest), params = get_usa_dataset(data_path=common.paths.PROCESSED_DATASET_DIR,
+                                                                       input_length=16, prediction_time=4, y_feature=4,
+                                                                       y_city=0,
+                                                                       start_city=0, end_city=30,
+                                                                       remove_last_from_test=800,
+                                                                       valid_split=1024, split_random=None)
 
     print(Xtr.shape, Ytr.shape, Xtest.shape, Ytest.shape, Xvalid.shape, Yvalid.shape)
     Xtr, Xtest, Xvalid = to_flatten_dataset(Xtr, Xtest, Xvalid)

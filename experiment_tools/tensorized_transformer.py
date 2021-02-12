@@ -107,17 +107,32 @@ def train_model(dataset, softmax_type=3, epoch=300, patience=20,
         callbacks=[early_stopping]
     )
 
-    return model, history
+    params = [
+        ('softmax_type', softmax_type),
+        ('epoch', epoch),
+        ('patience', patience),
+        ('stopped_epoch', early_stopping.stopped_epoch),
+        ('num_layers', num_layers),
+        ('head_num', head_num),
+        ('d_model', d_model),
+        ('dense_units', dense_units),
+        ('warmup_steps', warmup_steps),
+        ('factor1', factor1),
+        ('factor2', factor2),
+        ('initializer', initializer),
+    ]
+    return model, history, params
 
 
 if __name__ == '__main__':
-    dataset = load_dataset.get_usa_dataset(data_path=common.paths.PROCESSED_DATASET_DIR,
-                                                                          lag=16, step=4, y_feature=4, y_city=0,
-                                                                          start_city=0,
-                                                                          end_city=30, remove_last_from_test=800,
-                                                                          valid_split=1024,
-                                                                          split_random=None)
+    dataset, dataset_params = load_dataset.get_usa_dataset(data_path=common.paths.PROCESSED_DATASET_DIR,
+                                                           input_length=16, prediction_time=4,
+                                                           y_feature=4, y_city=0,
+                                                           start_city=0, end_city=30,
+                                                           remove_last_from_test=800,
+                                                           valid_split=1024, split_random=None)
     Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = dataset
     print(Xtr.shape, Ytr.shape, Xtest.shape, Ytest.shape, Xvalid.shape, Yvalid.shape)
-    model = train_model(dataset, use_tpu=False)
-    
+    model, history, model_params = train_model(dataset, use_tpu=False)
+    params = dataset_params + model_params
+

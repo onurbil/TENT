@@ -65,3 +65,8 @@ def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, y_feature, 
     pred_denorm = denorm.denormalize_feature(pred, y_feature)
     Ytest_denorm = denorm.denormalize_feature(Ytest, y_feature)
     plot_predictions(Ytest_denorm, pred_denorm, folder, base_name, '_1.png')
+
+
+def print_params(params):
+    for param in params:
+        print(f'{param[0]} = {param[1]}')
