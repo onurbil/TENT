@@ -2,7 +2,6 @@ The 'dataset_tensor.npy' has shape of (45253,36,9) as (time, cities, measurement
 
 
 The first and last dates in 'dataset_tensor.npy':
-
 0:     2012-10-01 12:00:00
 45252: 2017-11-30 00:00:00
 
@@ -63,6 +62,77 @@ The order of cities in 'dataset_tensor.npy':
 
 -----------------------------------------------------------------------------
 
-The 'eu_dataset_tensor.npy' has shape of (5470,18, 18) as (time, cities, features).
+The 'eu_dataset_tensor.npy' has shape of (5470,18, 18) as (time, cities, measurement).
 
 
+The first and last dates in 'eu_dataset_tensor.npy':
+0:           2005-05-04
+5470:     2020-04-24
+
+
+The order of measurements in 'eu_dataset_tensor.npy' and the minimum, maximum values:
+
+0:    high_temp(F)                     min: 10.0    max: 189.0
+1:    low_temp(F)                      min: -8.0     max: 84.0
+2:    avg_temp(F)                      min: 3.12    max: 93.86
+3:    dewpoint(F)                       min: -3.57   max: 74.65
+4:    high_dew(F)                       min: -2.0     max: 81.0
+5:    low_dew(F)                        min: -36.0   max: 73.0
+6:    avg_dew(F)                        min: -3.57   max: 74.65
+7:    maxwindspeed(mph)        min: 1.0       max: 230.0
+8:    visibility(mi)                      min: 0.06     max: 6.0 
+9:    sea_level_pressure(Hg)     min: 27.55  max: 32.06
+10:  temp_obs(F)                       min: -4        max: 95
+11:  dewpoint_obs(F)                min: -8         max: 75
+12:  humidity(%)                       min: 0          max: 100
+13:  wind                                    min: 22.5    max: 427.5
+14:  wind_speed(mph)              min:  0         max: 45
+15:  wind_gust(mph)                 min: 0          max: 64
+16:  pressure(in)                        min: 0.0       max: 30.9
+17:  condition                            min: 0          max: 6
+
+
+The order of cities in 'eu_dataset_tensor.npy':
+
+0: Amsterdam
+1: Barcelona
+2: Berlin
+3: Brussels
+4: Copenhagen
+5: Dublin
+6: Frankfurt
+7: Hamburg
+8: London
+9: Luxembourg
+10: Lyon
+11: Maastricht
+12: Malaga
+13: Marseille
+14: Munich
+15: Nice
+16: Paris
+17: Rotterdam
+
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
+             
