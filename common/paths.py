@@ -20,3 +20,10 @@ DATASET_DIR = os.path.join(PARENT_WORKING_DIR, 'dataset')
 ZIP_PATH = os.path.join(DATASET_DIR,'historical_hourly_weather_data.zip')
 # Preprocessed dataset directory:
 PROCESSED_DATASET_DIR = os.path.join(PARENT_WORKING_DIR, 'processed_dataset')
+
+# Raw dataset directory for preprocessing:
+EU_DATASET_DIR = os.path.join(PARENT_WORKING_DIR, 'eu_dataset')
+# Path of zip file of the raw dataset:
+EU_ZIP_PATH = os.path.join(EU_DATASET_DIR,'eu_weather_data.zip')
+# Preprocessed dataset directory:
+EU_PROCESSED_DATASET_DIR = os.path.join(PARENT_WORKING_DIR, 'eu_processed_dataset')
