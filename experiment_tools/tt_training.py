@@ -40,6 +40,7 @@ def create_model(input_shape, output_shape,
 def train_model(dataset, softmax_type=3, epoch=300, patience=20,
                 num_layers=3, head_num=32, d_model=256, dense_units=128,
                 batch_size=16, loss=kr.losses.mse, use_tpu=True):
+
     if use_tpu:
         strategy = initialize_tpu()
 
@@ -121,7 +122,7 @@ def train_model(dataset, softmax_type=3, epoch=300, patience=20,
         ('factor2', factor2),
         ('initializer', initializer),
     ]
-    return model, history, params
+    return model, params, history
 
 
 if __name__ == '__main__':
@@ -133,6 +134,5 @@ if __name__ == '__main__':
                                                            valid_split=1024, split_random=None)
     Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = dataset
     print(Xtr.shape, Ytr.shape, Xtest.shape, Ytest.shape, Xvalid.shape, Yvalid.shape)
-    model, history, model_params = train_model(dataset, use_tpu=False)
+    model, model_params, history = train_tt_model(dataset, use_tpu=False)
     params = dataset_params + model_params
-

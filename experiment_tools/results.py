@@ -55,11 +55,16 @@ def save_results_with_datetime(model, base_name, path, parameters):
     save_results(parameters, model, folder, name)
 
 
-def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, y_feature, folder, base_name):
+def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, y_feature, folder, base_name,
+                                model_returns_activations=False):
     pred = model.predict(Xvalid)
+    if model_returns_activations:
+        pred = pred[0]
     plot_predictions(Yvalid, pred, folder, base_name, '_valid.png')
 
     pred = model.predict(Xtest)
+    if model_returns_activations:
+        pred = pred[0]
     plot_predictions(Ytest, pred, folder, base_name, '_test.png')
 
     pred_denorm = denorm.denormalize_feature(pred, y_feature)
