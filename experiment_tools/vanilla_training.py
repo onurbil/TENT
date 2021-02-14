@@ -37,7 +37,6 @@ def train_model(dataset, epoch=300, patience=20,
                                                 restore_best_weights=True,
                                                 verbose=1)
 
-    model.summary()
     model.fit(Xtr_flat, Ytr,
               validation_data=(Xvalid_flat, Yvalid),
               epochs=epoch,
@@ -45,6 +44,8 @@ def train_model(dataset, epoch=300, patience=20,
               loss=loss,
               metrics={'mse': kr.metrics.mse, 'mae': kr.metrics.mae},
               callbacks=[early_stopping])
+
+    model.summary()
 
     params = [
         ('epoch', epoch),
@@ -60,3 +61,18 @@ def train_model(dataset, epoch=300, patience=20,
     ]
 
     return model, params
+
+
+if __name__ == '__main__':
+    import load_dataset
+    import common.paths
+    dataset, dataset_params = load_dataset.get_usa_dataset(data_path=common.paths.PROCESSED_DATASET_DIR,
+                                                           input_length=16, prediction_time=4,
+                                                           y_feature=4, y_city=0,
+                                                           start_city=0, end_city=30,
+                                                           remove_last_from_test=800,
+                                                           valid_split=1024, split_random=None)
+    Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = dataset
+    print(Xtr.shape, Ytr.shape, Xtest.shape, Ytest.shape, Xvalid.shape, Yvalid.shape)
+    model, model_params = train_model(dataset, epoch=1)
+    params = dataset_params + model_params

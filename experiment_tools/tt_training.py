@@ -134,5 +134,5 @@ if __name__ == '__main__':
                                                            valid_split=1024, split_random=None)
     Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = dataset
     print(Xtr.shape, Ytr.shape, Xtest.shape, Ytest.shape, Xvalid.shape, Yvalid.shape)
-    model, model_params, history = train_tt_model(dataset, use_tpu=False)
+    model, model_params, history = train_model(dataset, use_tpu=False)
     params = dataset_params + model_params
