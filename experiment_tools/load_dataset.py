@@ -101,8 +101,8 @@ def to_flatten_dataset(Xtr, Xtest, Xvalid=None):
 def reshape_to_batches(Xs, Ys, batch_size):
     num_batches = Xs.shape[0] // batch_size
     batched_len = num_batches * batch_size
-    print(Ys.shape)
-
+    print('Ys.shape', Ys.shape, 'batch_size', batch_size)
+    print('batched_len', batched_len)
     Xs = Xs[:batched_len, ...].reshape((num_batches, batch_size) + Xs.shape[1:])
     Ys = Ys[:batched_len, ...].reshape((num_batches, batch_size) + Ys.shape[1:])
 
