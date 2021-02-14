@@ -121,6 +121,7 @@ def train_model(dataset, softmax_type=3, epoch=300, patience=20,
         ('factor1', factor1),
         ('factor2', factor2),
         ('initializer', initializer),
+        ('batch_size', batch_size),
     ]
     return model, params, history
 

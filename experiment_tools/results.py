@@ -33,7 +33,7 @@ def plot_predictions(Ys, pred, folder, name, ending):
 
 def save_results(parameters, model, folder, name):
     fileName = os.path.join(folder, name)
-
+    print(f'saving to folder: {folder}')
     os.makedirs(os.path.dirname(folder), exist_ok=True)
     with open(fileName + ".txt", "a") as fh:
         model.summary(print_fn=lambda x: fh.write(x + '\n'))
@@ -50,8 +50,7 @@ def save_results_with_datetime(model, base_name, path, parameters):
     time = datetime.datetime.now().strftime("%H_%M_%S")
     name = f'{base_name}_{time}'
     folder = os.path.join(path, 'Tests/')
-    folder = os.path.join(folder,  f'{date}')
-
+    folder = os.path.join(folder,  f'{date}/')
     save_results(parameters, model, folder, name)
 
 
