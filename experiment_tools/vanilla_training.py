@@ -7,7 +7,7 @@ import vanilla_transformer.transformer as vt
 def train_model(dataset, epoch=300, patience=20,
                 num_layers=3, head_num=32, d_model=512, dense_units=512,
                 batch_size=128, dropout_rate=0.01, loss=kr.losses.mean_squared_error):
-
+    
     Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = dataset
     Xtr_flat, Xtest_flat, Xvalid_flat = experiment_dataset.to_flatten_dataset(Xtr, Xtest, Xvalid)
 
@@ -66,6 +66,7 @@ def train_model(dataset, epoch=300, patience=20,
 if __name__ == '__main__':
     import load_dataset
     import common.paths
+
     dataset, dataset_params = load_dataset.get_usa_dataset(data_path=common.paths.PROCESSED_DATASET_DIR,
                                                            input_length=16, prediction_time=4,
                                                            y_feature=4, y_city=0,

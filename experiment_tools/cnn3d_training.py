@@ -5,20 +5,24 @@ import tensorflow.keras as kr
 import model_3d_cnn.CNN3d as cnn3d
 
 
+def transform_dataset(Xtr, Xvalid, Xtest):
+    transpose_axes = [0, 2, 1, 3]
+    Xtr_t = np.transpose(Xtr, axes=transpose_axes)
+    Xvalid_t = np.transpose(Xvalid, axes=transpose_axes)
+    Xtest_t = np.transpose(Xtest, axes=transpose_axes)
+    return Xtr_t, Xvalid_t, Xtest_t
+
+
 def train_model(dataset, epoch=300, patience=20,
                 filters=10, kernel_size=2,
                 batch_size=128, learning_rate=0.0001, loss='mse'):
-
     Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = dataset
 
     input_length = Xtr.shape[-3]
     stations = Xtr.shape[-2]
     features = Xtr.shape[-1]
 
-    transpose_axes = [0, 2, 1, 3]
-    Xtr_t = np.transpose(Xtr, axes=transpose_axes)
-    Xvalid_t = np.transpose(Xvalid, axes=transpose_axes)
-    Xtest_t = np.transpose(Xtest, axes=transpose_axes)
+    Xtr_t, Xvalid_t, Xtest_t = transform_dataset(Xtr, Xvalid, Xtest)
 
     print(f'Xtr_t: {Xtr_t.shape}')
     print(f'Ytr: {Ytr.shape}')
