@@ -66,9 +66,10 @@ def get_dataset_normalization(data_path, file_name, y_feature):
     return scale[y_feature][1].astype(np.float), scale[y_feature][2].astype(np.float)
 
 
-def get_usa_dataset(data_path, test_size, input_length, prediction_time,
+def get_usa_dataset(data_path, input_length, prediction_time,
                     y_feature, y_city, start_city=0, end_city=None,
                     remove_last_from_test=None, valid_split=None, split_random=None):
+    test_size = 69 * 128
     return get_tensor_dataset(data_path, 'dataset_tensor.npy', test_size,
                               input_length, prediction_time,
                               y_feature, y_city, start_city, end_city,
