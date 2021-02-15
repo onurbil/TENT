@@ -9,6 +9,7 @@ import scipy.io as sio
 from torchsummary import summary
 import matplotlib.pyplot as plt
 import numpy as np
+import load_dataset.reshape_to_batches as reshape_to_batches
 
 def loss_batch(model, loss_func, xb, yb, opt=None):
     loss = loss_func(model(xb), yb)
