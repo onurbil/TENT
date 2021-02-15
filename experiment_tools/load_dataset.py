@@ -8,9 +8,11 @@ import common.paths
 import dataset_tools.split
 
 
-def get_usa_dataset(data_path, input_length, prediction_time, y_feature, y_city, start_city=0, end_city=30,
-                    remove_last_from_test=0, valid_split=None, split_random=None):
-    filename = os.path.join(data_path, 'dataset_tensor.npy')
+def get_tensor_dataset(data_path, file_name,
+                       input_length, prediction_time, y_feature, y_city,
+                       start_city=0, end_city=None,
+                       remove_last_from_test=0, valid_split=None, split_random=None):
+    filename = os.path.join(data_path, file_name)
     dataset = np.load(filename, allow_pickle=True)
 
     print(dataset.shape)
@@ -19,6 +21,9 @@ def get_usa_dataset(data_path, input_length, prediction_time, y_feature, y_city,
     train, test = dataset_tools.split.split_train_test(dataset)
     x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, pred_time=prediction_time)
     x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, pred_time=prediction_time)
+
+    if end_city is None:
+        end_city = x_train.shape[-2]
 
     print(x_train.shape, y_train.shape)
     if valid_split is not None:
@@ -52,6 +57,22 @@ def get_usa_dataset(data_path, input_length, prediction_time, y_feature, y_city,
     else:
         params.append(('valid_size', x_valid.shape[0]))
         return (x_train, y_train, x_valid, y_valid, x_test, y_test), params
+
+
+def get_usa_dataset(data_path, input_length, prediction_time, y_feature, y_city, start_city=0, end_city=None,
+                    remove_last_from_test=0, valid_split=None, split_random=None):
+    return get_tensor_dataset(data_path, 'dataset_tensor.npy',
+                              input_length, prediction_time,
+                              y_feature, y_city, start_city, end_city,
+                              remove_last_from_test, valid_split, split_random)
+
+
+def get_eu_dataset(data_path, input_length, prediction_time, y_feature, y_city, start_city=0, end_city=None,
+                   remove_last_from_test=0, valid_split=None, split_random=None):
+    return get_tensor_dataset(data_path, 'eu_dataset_tensor.npy',
+                              input_length, prediction_time,
+                              y_feature, y_city, start_city, end_city,
+                              remove_last_from_test, valid_split, split_random)
 
 
 def prepare_usa_xy(x, y, city_feature_shape, start_city, end_city, y_city, y_feature):
