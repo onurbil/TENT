@@ -52,6 +52,7 @@ def save_results_with_datetime(model, base_name, path, parameters):
     folder = os.path.join(path, 'Tests/')
     folder = os.path.join(folder,  f'{date}/')
     save_results(parameters, model, folder, name)
+    return folder
 
 
 def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, y_feature, folder, base_name,
