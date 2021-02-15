@@ -6,8 +6,17 @@ from common.variables import EU_TRAIN_VAL_SIZE
 
 
 
-def eu_process(input_folder, output_folder, files, train_val):
+def eu_process_timestamp(date):
 
+    data_list = [pd.to_datetime(pd.Series(x)) for x in date]
+    # Transforming datetime to day of the year
+    doy = pd.DataFrame([x.apply(lambda x: x.timetuple().tm_yday)/366 for x in data_list]).values    
+    doy = np.expand_dims(doy, 1)
+
+    return doy
+
+
+def eu_process(input_folder, output_folder, files, train_val):
 
     np_table = []
     for file in files:
@@ -18,9 +27,13 @@ def eu_process(input_folder, output_folder, files, train_val):
         table = df_table.to_numpy()
         np_table.append(table)
 
-
-    np_table = np.moveaxis(np.array(np_table),0,1)[:,:,1:]
-    # np_table: time x cities x features:
+    np_table = np.moveaxis(np.array(np_table),0,1)
+    # np_table: time x cities x features
+    
+    # Encode day of the year:
+    doy = eu_process_timestamp(np_table[:,0,0])
+    # Remove 'date' column: 
+    np_table = np_table[:,:,1:]    
 
     norm_table = np_table[:train_val]
 
@@ -32,9 +45,13 @@ def eu_process(input_folder, output_folder, files, train_val):
         np_table[:,:,feature] = (np_table[:,:,feature] - min_val)/(max_val - min_val)
 
         scale_list.append([features[feature], min_val, max_val])
-
     scale_list = np.array(scale_list)
-
+    
+    # Add day of the year (doy) to the dataset:
+    doy = np.broadcast_to(doy, (np_table.shape[0], np_table.shape[1], 1))
+    np_table = np.concatenate((doy, np_table), axis=-1)
+    scale_list = np.append([['day_of_the_year', 0, 366]], scale_list, axis=0)
+        
     filename = 'eu_dataset_tensor.npy'
     output_filepath = os.path.join(output_folder, filename)
     np.save(output_filepath, np_table)
