@@ -1,10 +1,8 @@
 import os
 import datetime
-
 import tensorflow.keras as kr
 import numpy as np
 import matplotlib.pyplot as plt
-
 import dataset_tools.denormalization as denorm
 
 
@@ -30,20 +28,22 @@ def plot_predictions(Ys, pred, folder, name, ending):
     plt.savefig(fileName + ending)
     plt.show()
 
-
 def save_results(parameters, model, folder, name):
     fileName = os.path.join(folder, name)
     print(f'saving to folder: {folder}')
     os.makedirs(os.path.dirname(folder), exist_ok=True)
-    with open(fileName + ".txt", "a") as fh:
-        model.summary(print_fn=lambda x: fh.write(x + '\n'))
-    f = open(fileName + ".txt", "a")
+    if name.startswith('MultiConv'):
+        f = open(fileName + ".txt", "a")
+        print('Model Summury not implemented', file = f)
+    else:
+        with open(fileName + ".txt", "a") as fh:
+            model.summary(summary_str=lambda x: fh.write(x + '\n'))
+        f = open(fileName + ".txt", "a")
     print("\n\n######################## Model description ################################", file=f)
     for name, results in parameters:
         print(str(name) + " = " + str(results), file=f)
     print("######################### Results ##########################################", file=f)
     f.close()
-
 
 def save_results_with_datetime(model, base_name, path, parameters):
     date = datetime.datetime.now().strftime("%Y_%m_%d")
