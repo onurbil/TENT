@@ -60,6 +60,12 @@ def get_tensor_dataset(data_path, file_name, test_size,
         return (x_train, y_train, x_valid, y_valid, x_test, y_test), params
 
 
+def get_dataset_normalization(data_path, file_name, y_feature):
+    filename = os.path.join(data_path, file_name)
+    scale = np.load(filename, allow_pickle=True)
+    return scale[y_feature][1].astype(np.float), scale[y_feature][2].astype(np.float)
+
+
 def get_usa_dataset(data_path, test_size, input_length, prediction_time,
                     y_feature, y_city, start_city=0, end_city=None,
                     remove_last_from_test=None, valid_split=None, split_random=None):
@@ -69,6 +75,10 @@ def get_usa_dataset(data_path, test_size, input_length, prediction_time,
                               remove_last_from_test, valid_split, split_random)
 
 
+def get_usa_normalization(data_path, y_feature):
+    return get_dataset_normalization(data_path, file_name='scale.npy', y_feature=y_feature)
+
+
 def get_eu_dataset(data_path, test_size, input_length, prediction_time,
                    y_feature, y_city, start_city=0, end_city=None,
                    remove_last_from_test=None, valid_split=None, split_random=None):
@@ -76,6 +86,10 @@ def get_eu_dataset(data_path, test_size, input_length, prediction_time,
                               input_length, prediction_time,
                               y_feature, y_city, start_city, end_city,
                               remove_last_from_test, valid_split, split_random)
+
+
+def get_eu_normalization(data_path, y_feature):
+    return get_dataset_normalization(data_path, file_name='eu_scale.npy', y_feature=y_feature)
 
 
 def prepare_xy(x, y, city_feature_shape, start_city, end_city, y_city, y_feature):
@@ -142,9 +156,9 @@ if __name__ == '__main__':
     test_size = 1095  # 3 years of measurements
 
     dataset, dataset_params = get_eu_dataset(common.paths.PROCESSED_DATASET_DIR, test_size,
-                                                          input_length, prediction_time,
-                                                          y_feature, y_city,
-                                                          valid_split=valid_size, split_random=1337)
+                                             input_length, prediction_time,
+                                             y_feature, y_city,
+                                             valid_split=valid_size, split_random=1337)
 
     Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = dataset
     print('Xtr.shape', Xtr.shape)

@@ -14,10 +14,16 @@ features_min_max_values = {
 }
 
 
-def denormalize_feature(values, feature_index):
-    if feature_index not in features_min_max_values:
-        print(f'Feature not suitable for denormalization.')
-        return values
+def denormalize_feature(values, feature_index=None, min=None, max=None):
+    assert feature_index is not None or (min is not None and max is not None)
 
-    value_min, value_max = features_min_max_values[feature_index]
+    if feature_index is not None:
+        if feature_index not in features_min_max_values:
+            print(f'Feature not suitable for denormalization.')
+            return values
+        value_min, value_max = features_min_max_values[feature_index]
+
+    else:
+        value_min, value_max = min, max
+
     return values * (value_max - value_min) + value_min
