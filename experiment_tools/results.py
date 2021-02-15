@@ -32,7 +32,7 @@ def save_results(parameters, model, folder, name):
     fileName = os.path.join(folder, name)
     print(f'saving to folder: {folder}')
     os.makedirs(os.path.dirname(folder), exist_ok=True)
-    if name.startswith('MultiConv'):
+    if name.startswith('MultiConv') or name.startswith('CNN3D'):
         f = open(fileName + ".txt", "a")
         print('Model Summury not implemented', file = f)
     else:
