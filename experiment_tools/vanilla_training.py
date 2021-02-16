@@ -2,7 +2,6 @@ import tensorflow.keras as kr
 
 import experiment_tools.load_dataset as experiment_dataset
 import vanilla_transformer.transformer as vt
-from keras.callbacks import History
 
 
 def train_model(dataset, epoch=300, patience=20,
@@ -37,7 +36,6 @@ def train_model(dataset, epoch=300, patience=20,
                                                 patience=patience,
                                                 restore_best_weights=True,
                                                 verbose=1)
-    history = History()
 
     model.fit(Xtr_flat, Ytr,
               validation_data=(Xvalid_flat, Yvalid),
@@ -45,8 +43,7 @@ def train_model(dataset, epoch=300, patience=20,
               optimizer=optimizer,
               loss=loss,
               metrics={'mse': kr.metrics.mse, 'mae': kr.metrics.mae},
-              callbacks=[early_stopping,
-                         history])
+              callbacks=[early_stopping])
 
     model.summary()
 
