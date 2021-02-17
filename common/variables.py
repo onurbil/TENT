@@ -6,6 +6,9 @@ city_labels = ['Vancouver', 'Portland', 'San Francisco', 'Seattle', 'Los Angeles
 'Boston', 'Beersheba', 'Tel Aviv District', 'Eilat', 'Haifa', 'Nahariyya',
 'Jerusalem']
 
+eu_city_labels = ['Amsterdam', 'Barcelona', 'Berlin', 'Brussels', 'Copenhagen',
+'Dublin', 'Frankfurt', 'Hamburg', 'London', 'Luxembourg', 'Lyon', 'Maastricht',
+'Malaga', 'Marseille', 'Munich', 'Nice', 'Paris', 'Rotterdam']
 
 weather_desc_labels = {'shower drizzle':0, 'freezing rain':1, 'volcanic ash':2,
 'proximity shower rain':3, 'fog':4, 'shower snow':5, 'tornado':6, 'drizzle':7,

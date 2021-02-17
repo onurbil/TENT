@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import dataset_tools.denormalization as denorm
 
-
 def plot_predictions(Ys, pred, folder, name, ending):
     fileName = folder + name
     pred = pred.flatten()
@@ -15,7 +14,7 @@ def plot_predictions(Ys, pred, folder, name, ending):
     f = open(fileName + ".txt", "a")
     print(f'Figure mae{ending}: {np.mean(mae)}', file=f)
     print(f'Figure mse{ending}: {np.mean(mse)}', file=f)
-    print('\n\n', file=f)
+    print('\n', file=f)
     f.close()
     print(f'Figure mae: {np.mean(mae)}')
     print(f'Figure mse: {np.mean(mse)}')
@@ -34,15 +33,24 @@ def save_results(parameters, model, folder, name):
     os.makedirs(os.path.dirname(folder), exist_ok=True)
     if name.startswith('MultiConv'):
         f = open(fileName + ".txt", "a")
-        print('Model Summury not implemented', file = f)
+        print(model.load_state_dict, file=f)
     else:
         with open(fileName + ".txt", "a") as fh:
             model.summary(print_fn=lambda x: fh.write(x + '\n'))
         f = open(fileName + ".txt", "a")
-    print("\n\n######################## Model description ################################", file=f)
+        print("\n######################### Model Run ##########################################", file=f)
+        history = model.history.history
+        keys = model.history.history.keys()
+        size = len(history['loss'])
+        print(f'Number of epochs: {size}', file=f)
+        for ii in range(size):
+            for i in keys:
+                print(f'Epoch_{ii}_{i} : {history[i][ii]}', file=f)
+            print('\n', file=f)
+    print("######################## Model description ################################", file=f)
     for name, results in parameters:
         print(str(name) + " = " + str(results), file=f)
-    print("######################### Results ##########################################", file=f)
+    print("\n######################### Results ##########################################", file=f)
     f.close()
 
 def save_results_with_datetime(model, base_name, path, parameters):
@@ -53,7 +61,6 @@ def save_results_with_datetime(model, base_name, path, parameters):
     folder = os.path.join(folder,  f'{date}/')
     save_results(parameters, model, folder, name)
     return folder, name
-
 
 def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, folder, base_name,
                                 y_feature=None, denorm_min=None, denorm_max=None,
@@ -77,8 +84,7 @@ def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, folder, bas
 
     pred_denorm = denorm.denormalize_feature(pred, y_feature, denorm_min, denorm_max)
     Ytest_denorm = denorm.denormalize_feature(Ytest, y_feature, denorm_min, denorm_max)
-    plot_predictions(Ytest_denorm, pred_denorm, folder, base_name, '_1.png')
-
+    plot_predictions(Ytest_denorm, pred_denorm, folder, base_name, '_denormalized.png')
 
 def print_params(params):
     for param in params:

@@ -4,13 +4,15 @@ import pandas as pd
 from common.paths import EU_DATASET_DIR, EU_PROCESSED_DATASET_DIR
 from common.variables import EU_TRAIN_VAL_SIZE
 
-
+from debugging_tools import *
 
 def eu_process_timestamp(date):
 
     data_list = [pd.to_datetime(pd.Series(x)) for x in date]
     # Transforming datetime to day of the year
-    doy = pd.DataFrame([x.apply(lambda x: x.timetuple().tm_yday)/366 for x in data_list]).values    
+    doy = pd.DataFrame([x.apply(lambda x: x.timetuple().tm_yday)/366 for x in data_list]).values  
+    printall(doy)
+    pause()  
     doy = np.expand_dims(doy, 1)
 
     return doy

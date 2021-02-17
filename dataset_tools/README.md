@@ -68,7 +68,7 @@ The 'eu_dataset_tensor.npy' has shape of (5470,18, 19) as (time, cities, measure
 
 The first and last dates in 'eu_dataset_tensor.npy':
 0:           2005-05-04
-5470:     2020-04-24
+5469:     2020-04-24
 
 
 
