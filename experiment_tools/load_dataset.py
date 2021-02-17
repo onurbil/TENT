@@ -24,7 +24,7 @@ def get_tensor_dataset(data_path, file_name, test_size,
     x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, pred_time=prediction_time)
 
     if end_city is None:
-        end_city = x_train.shape[-2]
+        end_city = city_feature_shape[0]
 
     if valid_split is not None:
         x_train, x_valid, y_train, y_valid = sklearn.model_selection.train_test_split(x_train, y_train,
