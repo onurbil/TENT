@@ -1,8 +1,11 @@
 import seaborn as sns
 import os
 import pandas as pd
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
 
-def plot_save(plot_data, folder_name, x_axis, y_axis, plot_title, save_name, show_plot = False):
+def plot_save(plot_data, folder_name, x_labels, y_labels, x_axis, y_axis, plot_title, save_name, show_plot = False):
   # Checking that the folder exists, if not, create it.
   if not os.path.exists(folder_name):
     os.makedirs(folder_name)
@@ -23,12 +26,10 @@ def plot_save(plot_data, folder_name, x_axis, y_axis, plot_title, save_name, sho
     plt.show()
   plt.close()
 
-  x_np = arr3.numpy()
+  x_np = plot_data.numpy()
   x_df = pd.DataFrame(x_np, columns = x_labels, index = y_labels)
   # Save Data
   x_df.to_csv(save_path + '.csv')
-
-
 
 def save_weights(model, city_labels, layer=1, folder_name = '/content/drive/MyDrive/Colab Notebooks/Tensorized Transformers/AW'):
   AW = model.layers[layer].attention_weights
@@ -36,13 +37,17 @@ def save_weights(model, city_labels, layer=1, folder_name = '/content/drive/MyDr
   for Head in range(AW.shape[0]):
     arr1 = AW[:,0,...][Head]
     plot_data = tf.math.reduce_sum(arr1, axis=-2)
-    # print(f'Layer: {layer}, AW.shape: {AW.shape}')
-    # print(f'1st reduction shape: {arr1.shape}')
-    # print(f'Plot data shape: {arr2.shape}')
     y_labels = np.arange(plot_data.shape[-2])
     x_labels = city_labels[:AW.shape[-1]]
 
-    plot_save(plot_data, folder_name = folder_name + '/Heads', x_axis = 'City', y_axis='Input Time', plot_title='Attention weights for head {}'.format(Head), save_name = 'HeatMapHead{}'.format(Head))
+    plot_save(plot_data,
+              folder_name = folder_name + '/Heads',
+              x_labels = x_labels ,
+              y_labels = y_labels,
+              x_axis = 'City',
+              y_axis='Input Time',
+              plot_title='Attention weights for head {}'.format(Head),
+              save_name = 'HeatMapHead{}'.format(Head))
 
 # Saving data + plot for 3 reduction
   arr1 = AW[:,0,...]
@@ -54,4 +59,13 @@ def save_weights(model, city_labels, layer=1, folder_name = '/content/drive/MyDr
   print(f'Plot data shape: {plot_data.shape}')
   y_labels = np.arange(plot_data.shape[-2])
   x_labels = city_labels[:AW.shape[-1]]
-  plot_save(plot_data, folder_name = folder_name, x_axis = 'City', y_axis='Heads', plot_title='Attention weights for Cities x Heads', save_name = 'HeatMapTotal', show_plot = True)
+
+  plot_save(plot_data,
+            folder_name = folder_name,
+            x_labels=x_labels,
+            y_labels=y_labels,
+            x_axis = 'City',
+            y_axis='Heads',
+            plot_title='Attention weights for Cities x Heads',
+            save_name = 'HeatMapTotal',
+            show_plot = True)
