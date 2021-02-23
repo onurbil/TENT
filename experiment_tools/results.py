@@ -26,6 +26,7 @@ def plot_predictions(Ys, pred, folder, name, ending):
     plt.legend()
     plt.savefig(fileName + ending)
     plt.show()
+    return mae, mse
 
 def save_results(parameters, model, folder, name):
     fileName = os.path.join(folder, name)
@@ -72,7 +73,7 @@ def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, folder, bas
         pred = model.predict(Xvalid)
         if model_returns_activations:
             pred = pred[0]
-    plot_predictions(Yvalid, pred, folder, base_name, '_valid.png')
+    valid_mae, valid_mse = plot_predictions(Yvalid, pred, folder, base_name, '_valid.png')
 
     if pred_test is not None:
         pred = pred_test
@@ -80,11 +81,14 @@ def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, folder, bas
         pred = model.predict(Xtest)
         if model_returns_activations:
             pred = pred[0]
-    plot_predictions(Ytest, pred, folder, base_name, '_test.png')
+    test_mae, test_mse = plot_predictions(Ytest, pred, folder, base_name, '_test.png')
 
     pred_denorm = denorm.denormalize_feature(pred, y_feature, denorm_min, denorm_max)
     Ytest_denorm = denorm.denormalize_feature(Ytest, y_feature, denorm_min, denorm_max)
-    plot_predictions(Ytest_denorm, pred_denorm, folder, base_name, '_denormalized.png')
+    test_denorm_mae, test_denorm_mse \
+        = plot_predictions(Ytest_denorm, pred_denorm, folder, base_name, '_denormalized.png')
+    return valid_mae, valid_mse, test_mae, test_mse, test_denorm_mae, test_denorm_mse
+
 
 def print_params(params):
     for param in params:

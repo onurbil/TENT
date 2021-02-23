@@ -135,7 +135,7 @@ class EncoderLayer(kr.layers.Layer):
         #     trainable=False)
         self.d_k = int(self.d_model / self.head_num)
 
-    def call(self, inputs):
+    def call(self, inputs, training=True):
         inputs = tf.expand_dims(inputs, -2)
         q = tf.squeeze(tf.matmul(inputs, self.wq), -2)
         k = tf.squeeze(tf.matmul(inputs, self.wk), -2)
@@ -164,7 +164,7 @@ class EncoderLayer(kr.layers.Layer):
         # self.attention_weights[:,:actual_batch_size,:,:,:].assign(aww)
         ###
         # tf.print(tf.shape(aww))
-        if self.save_attention:
+        if self.save_attention and training:
             aww = tf.stack(aw_list, axis=0)
             self.attention_weights.assign(aww)
 
