@@ -14,6 +14,7 @@ THIS_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 WORKING_DIR =  Path(THIS_FILE_DIR).parent
 # Parent of main.py to save datasets:
 PARENT_WORKING_DIR = Path(WORKING_DIR).parent
+
 # Raw dataset directory for preprocessing:
 DATASET_DIR = os.path.join(PARENT_WORKING_DIR, 'dataset')
 # Path of zip file of the raw dataset:

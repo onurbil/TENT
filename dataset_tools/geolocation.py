@@ -31,7 +31,7 @@ def convert_to_xyz(lat, lon):
 
 def normalize_xyz(x,y,z):
     """
-    convert_to_xyz() function normalized to (-1,1). This function normalizes
+    convert_to_xyz() function normalizes to (-1,1). This function normalizes
     after the output of convert_to_xyz() to (0,1):
     """
     norm_x = (x+1)/2

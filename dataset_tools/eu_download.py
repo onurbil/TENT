@@ -79,7 +79,7 @@ def check_dataset(dataset_path, zip_path):
         file_check = os.path.isfile(os.path.join(dataset_path, file))
 
         if file_check == False:
-            print(file_check)
+
             download_dataset(dataset_path=dataset_path, destination=zip_path)
             return check_dataset(dataset_path=dataset_path, zip_path=zip_path)
 

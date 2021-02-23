@@ -32,9 +32,10 @@ weather_desc_labels = {'shower drizzle':0, 'freezing rain':1, 'volcanic ash':2,
 
 # DATASET_SAMPLE_SIZE is the row size in the dataset (for geolocation.py):
 DATASET_SAMPLE_SIZE = 45253
-
 # Sum of train and validation samples:
 TRAIN_VAL_SIZE = 36333
 
+# DATASET_EU:SAMPLE_SIZE is the row size in the dataset (for eu_geolocation.py):
+EU_DATASET_SAMPLE_SIZE = 5470
 # Sum of train and validation samples:
 EU_TRAIN_VAL_SIZE = 4375
