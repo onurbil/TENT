@@ -107,10 +107,9 @@ def eu_process(input_folder, output_folder, files, train_val):
     scale_list = np.append([['day_of_the_year', 0, 366]], scale_list, axis=0)
 
     # Add geolocation information:
-    city_att_file = 'city_attributes_eu.csv'
-    city_att = eu_location_xyz(input_folder, city_att_file, 
-                            repeat=EU_DATASET_SAMPLE_SIZE, norm=True)
-        
+    # city_att_file = 'city_attributes_eu.csv'
+    # city_att = eu_location_xyz(input_folder, city_att_file, 
+    #                         repeat=EU_DATASET_SAMPLE_SIZE, norm=True)    
     # np_table = np.concatenate((np_table, city_att), axis=-1)
 
 
