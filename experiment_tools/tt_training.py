@@ -19,13 +19,13 @@ def initialize_tpu():
 def create_model(input_shape, output_shape,
                  input_length, num_layers,
                  d_model, head_num, dense_units,
-                 initializer, softmax_type, batch_size):
+                 initializer, softmax_type, batch_size, save_aw):
     layers = [kr.Input(shape=input_shape),
               tt.PositionalEncoding()]
 
     for _ in range(num_layers):
         layers.append(
-            tt.EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size))
+            tt.EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size, save_attention=save_aw))
 
     layers.extend([
         kr.layers.Flatten(),
@@ -39,7 +39,7 @@ def create_model(input_shape, output_shape,
 
 def train_model(dataset, softmax_type=3, epoch=300, patience=20,
                 num_layers=3, head_num=32, d_model=256, dense_units=128,
-                batch_size=16, loss=kr.losses.mse, use_tpu=True):
+                batch_size=16, loss=kr.losses.mse, use_tpu=True, save_aw = False):
 
     if use_tpu:
         strategy = initialize_tpu()
@@ -84,7 +84,7 @@ def train_model(dataset, softmax_type=3, epoch=300, patience=20,
         with strategy.scope():
             model = create_model(input_shape, output_shape, input_length,
                                  num_layers, d_model, head_num, dense_units,
-                                 initializer, softmax_type, batch_size)
+                                 initializer, softmax_type, batch_size, save_aw)
             model.compile(optimizer=optimizer, loss=loss, metrics=['mse', 'mae', lr_metric])
     else:
         model = create_model(input_shape, output_shape, input_length,
