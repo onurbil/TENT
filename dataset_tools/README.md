@@ -74,25 +74,25 @@ The first and last dates in 'eu_dataset_tensor.npy':
 
 The order of measurements in 'eu_dataset_tensor.npy' and the minimum, maximum values:
 
-0:    day of the year                 min: 1         max: 366
-1    high_temp(F)                     min: 10.0    max: 189.0
-2:    low_temp(F)                      min: -8.0     max: 84.0
-3:    avg_temp(F)                      min: 3.12    max: 93.86
-4:    dewpoint(F)                       min: -3.57   max: 74.65
-5:    high_dew(F)                       min: -2.0     max: 81.0
-6:    low_dew(F)                        min: -36.0   max: 73.0
-7:    avg_dew(F)                        min: -3.57   max: 74.65
-8:    maxwindspeed(mph)        min: 1.0       max: 230.0
-9:    visibility(mi)                      min: 0.06     max: 6.0 
-10:    sea_level_pressure(Hg)     min: 27.55  max: 32.06
-11:  temp_obs(F)                       min: -4        max: 95
-12:  dewpoint_obs(F)                min: -8         max: 75
-13:  humidity(%)                       min: 0          max: 100
-14:  wind                                    min: 22.5    max: 427.5
-15:  wind_speed(mph)              min:  0         max: 45
-16:  wind_gust(mph)                 min: 0          max: 64
-17:  pressure(in)                        min: 0.0       max: 30.9
-18:  condition                            min: 0          max: 6
+0:    day of the year               min: 1          max: 366
+1     high_temp(F)                  min: 10.0       max: 189.0
+2:    low_temp(F)                   min: -8.0       max: 84.0
+3:    avg_temp(F)                   min: 3.12       max: 93.86
+4:    dewpoint(F)                   min: -3.57      max: 74.65
+5:    high_dew(F)                   min: -2.0       max: 81.0
+6:    low_dew(F)                    min: -36.0      max: 73.0
+7:    avg_dew(F)                    min: -3.57      max: 74.65
+8:    maxwindspeed(mph)             min: 1.0        max: 230.0
+9:    visibility(mi)                min: 0.06       max: 6.0 
+10:   sea_level_pressure(Hg)        min: 27.55      max: 32.06
+11:   temp_obs(F)                   min: -4         max: 95
+12:   dewpoint_obs(F)               min: -8         max: 75
+13:   humidity(%)                   min: 0          max: 100
+14:   wind                          min: 22.5       max: 427.5
+15:   wind_speed(mph)               min:  0         max: 45
+16:   wind_gust(mph)                min: 0          max: 64
+17:   pressure(in)                  min: 0.0        max: 30.9
+18:   condition                     min: 0          max: 6
 
 
 
