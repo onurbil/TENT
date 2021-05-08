@@ -89,7 +89,7 @@ def train_model(dataset, softmax_type=3, epoch=300, patience=20,
     else:
         model = create_model(input_shape, output_shape, input_length,
                              num_layers, d_model, head_num, dense_units,
-                             initializer, softmax_type, batch_size)
+                             initializer, softmax_type, batch_size, save_aw)
         model.compile(optimizer=optimizer, loss=loss, metrics=['mse', 'mae', lr_metric])
 
     # Callbacks
