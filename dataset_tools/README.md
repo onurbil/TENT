@@ -4,6 +4,7 @@ The 'dataset_tensor.npy' has shape of (45253,36,9) as (time, cities, measurement
 The first and last dates in 'dataset_tensor.npy':
 0:              2012-10-01 12:00:00
 45252:      2017-11-30 00:00:00
+(First test data: 2017-11-30)
 
 
 The order of measurements in 'dataset_tensor.npy' and the minimum, maximum values:
@@ -69,7 +70,7 @@ The 'eu_dataset_tensor.npy' has shape of (5470,18, 19) as (time, cities, measure
 The first and last dates in 'eu_dataset_tensor.npy':
 0:           2005-05-04
 5469:     2020-04-24
-
+(First test data: 2017-04-24)
 
 
 The order of measurements in 'eu_dataset_tensor.npy' and the minimum, maximum values:

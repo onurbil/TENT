@@ -32,6 +32,7 @@ class PositionalEncoding(kr.layers.Layer):
         angle_rads = get_angles(np.arange(self.position)[:, np.newaxis],
                                 np.arange(self.angle_dim)[np.newaxis, :],
                                 self.angle_dim)
+        
         angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
         angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
 
@@ -320,7 +321,7 @@ if __name__ == '__main__':
 
     softmax_type = 3
     input_length = 16
-    lag = 4
+    pred_time = 4
     epoch = 200  # 100
 
     learning_rate = 0.0001
@@ -334,8 +335,8 @@ if __name__ == '__main__':
     initializer = 'RandomNormal'
 
     train, test = dataset_tools.split.split_train_test(dataset)
-    x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, lag=lag)
-    x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, lag=lag)
+    x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, pred_time=pred_time)
+    x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, pred_time=pred_time)
 
     # x_train = x_train.astype('float32')
     x_train = tf.reshape(x_train, (x_train.shape[0], x_train.shape[1], dataset.shape[1], dataset.shape[2]))
@@ -363,8 +364,8 @@ if __name__ == '__main__':
         kr.Input(shape=input_shape),
         PositionalEncoding(),
         EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        # EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
+        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
         kr.layers.Flatten(),
         kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
         kr.layers.Reshape(output_shape),
@@ -433,7 +434,7 @@ if __name__ == '__main__':
     model.summary()
     print("softmax_type = ", softmax_type)
     print("Input_length = ", input_length)
-    print("Lag = ", lag)
+    print("Lag = ", pred_time)
     print("Epoch = ", epoch)
 
     print("LR = ", learning_rate)
