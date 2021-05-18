@@ -14,6 +14,12 @@ from tensorflow.keras.callbacks import LambdaCallback
 
 
 def get_angles(pos, i, d_model):
+    
+    tf.print('###')
+    tf.print(pos)
+    tf.print(i)
+    tf.print('##############')
+    
     angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
     return pos * angle_rates
 
@@ -29,13 +35,14 @@ class PositionalEncoding(kr.layers.Layer):
         self.batch_size = input_shape[0]
 
     def call(self, input_data):
+        
         angle_rads = get_angles(np.arange(self.position)[:, np.newaxis],
                                 np.arange(self.angle_dim)[np.newaxis, :],
                                 self.angle_dim)
         
         angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
         angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
-
+        
         angle_rads = np.broadcast_to(np.expand_dims(angle_rads, -1), input_data.shape[1:])
 
         pos_encoding = tf.broadcast_to(angle_rads, tf.shape(input_data))
