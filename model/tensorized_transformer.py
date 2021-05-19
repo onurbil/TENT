@@ -14,12 +14,6 @@ from tensorflow.keras.callbacks import LambdaCallback
 
 
 def get_angles(pos, i, d_model):
-    
-    tf.print('###')
-    tf.print(pos)
-    tf.print(i)
-    tf.print('##############')
-    
     angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
     return pos * angle_rates
 
