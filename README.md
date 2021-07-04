@@ -1,8 +1,18 @@
-##Tensorized Transformers
-Application of the tensorized transformers on the [hourly weather dataset](https://www.kaggle.com/selfishgene/historical-hourly-weather-data).
+##TENT
+Official implementation code of the paper: "TENT: Tensorized Encoder Transformer for temperature forecasting" [(ArXiv link)](https://arxiv.org/abs/2106.14742).
 
-![Multidimensional Convolution](attention.png)
+
+![TENT](TENT_visualization_short_dim.png)
 
 ## Usage
-1. Install the necessary packages from the `requirements.txt`.
-2. Execute `main.py`.
+1. Execute `TT_All_models_experiments.ipynb`.
+
+## Citation
+```
+@article{bilgin2021tent,
+  title={TENT: Tensorized Encoder Transformer for Temperature Forecasting},
+  author={Bilgin, Onur and M{\k{a}}ka, Pawe{\l} and Vergutz, Thomas and Mehrkanoon, Siamak},
+  journal={arXiv preprint arXiv:2106.14742},
+  year={2021}
+}
+```
