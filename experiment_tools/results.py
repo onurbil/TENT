@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import dataset_tools.denormalization as denorm
 
+
 def plot_predictions(Ys, pred, folder, name, ending):
     fileName = folder + name
     pred = pred.flatten()
@@ -27,6 +28,7 @@ def plot_predictions(Ys, pred, folder, name, ending):
     plt.savefig(fileName + ending)
     plt.show()
     return mae, mse
+
 
 def save_results(parameters, model, folder, name):
     fileName = os.path.join(folder, name)
@@ -54,14 +56,16 @@ def save_results(parameters, model, folder, name):
     print("\n######################### Results ##########################################", file=f)
     f.close()
 
+
 def save_results_with_datetime(model, base_name, path, parameters):
     date = datetime.datetime.now().strftime("%Y_%m_%d")
     time = datetime.datetime.now().strftime("%H_%M_%S")
     name = f'{base_name}_{time}'
     folder = os.path.join(path, 'Tests/')
-    folder = os.path.join(folder,  f'{date}/')
+    folder = os.path.join(folder, f'{date}/')
     save_results(parameters, model, folder, name)
     return folder, name
+
 
 def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, folder, base_name,
                                 y_feature=None, denorm_min=None, denorm_max=None,

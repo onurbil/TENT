@@ -2,7 +2,6 @@ import os.path
 
 import numpy as np
 import sklearn.model_selection
-import scipy.io
 
 import common.paths
 import dataset_tools.split
@@ -102,27 +101,6 @@ def prepare_xy(x, y, city_feature_shape, start_city, end_city, y_city, y_feature
     return x, y
 
 
-def get_denmark_dataset(data_path, step, feature, y_city=None, valid_split=None, split_random=None):
-    filename = os.path.join(data_path, 'Denmark')
-    filename = os.path.join(filename, f'{feature}')
-    filename = os.path.join(filename, f'step{step}.mat')
-    mat = scipy.io.loadmat(filename)
-    Xtr = mat['Xtr'].swapaxes(1, 2)
-    Ytr = mat['Ytr']
-    Xtest = mat['Xtest'].swapaxes(1, 2)
-    Ytest = mat['Ytest']
-    if y_city is not None:
-        Ytr = Ytr[:, y_city:y_city + 1]
-        Ytest = Ytest[:, y_city:y_city + 1]
-
-    if valid_split is None:
-        return Xtr, Ytr, Xtest, Ytest
-    else:
-        Xtr, Xvalid, Ytr, Yvalid = sklearn.model_selection.train_test_split(Xtr, Ytr, test_size=valid_split,
-                                                                            random_state=split_random)
-        return Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest
-
-
 def to_flatten_dataset(Xtr, Xtest, Xvalid=None):
     t = Xtr.shape[1]
     f = Xtr.shape[2] * Xtr.shape[3]
@@ -168,26 +146,3 @@ if __name__ == '__main__':
     print('Yvalid.shape', Yvalid.shape)
     print('Xtest.shape', Xtest.shape)
     print('Ytest.shape', Ytest.shape)
-
-    # Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = dataset
-    # print('Xtest.shape', Xtest.shape)
-    # print('Ytest.shape', Ytest.shape)
-    #
-    #
-    # (Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest), params = get_usa_dataset(data_path=common.paths.PROCESSED_DATASET_DIR,
-    #                                                                    input_length=16, prediction_time=4, y_feature=4,
-    #                                                                    y_city=0,
-    #                                                                    start_city=0, end_city=30,
-    #                                                                    remove_last_from_test=800,
-    #                                                                    valid_split=1024, split_random=None)
-    #
-    # print(Xtr.shape, Ytr.shape, Xtest.shape, Ytest.shape, Xvalid.shape, Yvalid.shape)
-    # Xtr, Xtest, Xvalid = to_flatten_dataset(Xtr, Xtest, Xvalid)
-    # Xtr, Ytr = reshape_to_batches(Xtr, Ytr, 128)
-    # print(Xtr.shape, Ytr.shape, Xtest.shape, Ytest.shape, Xvalid.shape, Yvalid.shape)
-    #
-    # import matplotlib.pyplot as plt
-    #
-    # plt.figure(figsize=(40, 8))
-    # plt.plot(range(Ytest.size), Ytest.flatten())
-    # plt.show()

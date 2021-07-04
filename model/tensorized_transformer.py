@@ -5,16 +5,16 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras as kr
-import matplotlib.pyplot as plt
-import dataset_tools.split
-import attention.self_attention
 import common.paths
-from visualization_tools.visualization import visualize_pos_encoding, attention_plotter, attention_3d_plotter, loop_plotter
-from tensorflow.keras.callbacks import LambdaCallback
 
 
-def get_angles(pos, i, d_model):
-    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
+"""
+The implementation of TENT model.
+"""
+
+
+def get_angles(pos, i, c):
+    angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(c))
     return pos * angle_rates
 
 
@@ -23,32 +23,25 @@ class PositionalEncoding(kr.layers.Layer):
         super(PositionalEncoding, self).__init__(**kwargs)
 
     def build(self, input_shape):
-        self.position = input_shape[-3]
-        self.angle_dim = input_shape[-2]
+        self.t = input_shape[-3]
+        self.c = input_shape[-2]
         self.model_shape = input_shape
         self.batch_size = input_shape[0]
 
     def call(self, input_data):
-        
-        angle_rads = get_angles(np.arange(self.position)[:, np.newaxis],
-                                np.arange(self.angle_dim)[np.newaxis, :],
-                                self.angle_dim)
-        
+        angle_rads = get_angles(np.arange(self.t)[:, np.newaxis],
+                                np.arange(self.c)[np.newaxis, :],
+                                self.c)
+
         angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
         angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
-        
+
         angle_rads = np.broadcast_to(np.expand_dims(angle_rads, -1), input_data.shape[1:])
 
         pos_encoding = tf.broadcast_to(angle_rads, tf.shape(input_data))
         pos_encoding = tf.cast(pos_encoding, input_data.dtype)
 
         return tf.math.add(input_data, pos_encoding)
-
-    # def get_config(self):
-    #     config = {
-    #         'broadcast': self.broadcast,
-    #     }
-    #     return config
 
     @classmethod
     def from_config(cls, config):
@@ -62,14 +55,13 @@ class EncoderLayer(kr.layers.Layer):
                  head_num,
                  dense_units,
                  initializer,
-                 softmax_type,
-                 batch_size,
+                 softmax_type=3,
+                 batch_size=32,
                  save_attention=False,
                  **kwargs):
         super(EncoderLayer, self).__init__(**kwargs)
 
-        # TODO: add meaningful description to the assertion
-        assert (d_model % head_num == 0)
+        assert (d_model % head_num == 0), 'The division of d_k and head number must be an integer.'
 
         self.input_length = input_length
         self.d_model = d_model
@@ -131,10 +123,6 @@ class EncoderLayer(kr.layers.Layer):
         self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(shape=attention_shape, dtype=tf.float32),
                                              trainable=False)
 
-        # self.attention_weights = tf.Variable(initial_value=tf.raw_ops.Empty(
-        #     shape=(self.head_num,0,self.input_length, self.input_length),
-        #     dtype=tf.float32),
-        #     trainable=False)
         self.d_k = int(self.d_model / self.head_num)
 
     def call(self, inputs, training=True):
@@ -160,12 +148,6 @@ class EncoderLayer(kr.layers.Layer):
             aw_list.append(aw)
 
         z = tf.concat(zs, axis=-1)
-        ###
-        # For any size of sample (not available in TPU):
-        # actual_batch_size = tf.shape(aww)[1]
-        # self.attention_weights[:,:actual_batch_size,:,:,:].assign(aww)
-        ###
-        # tf.print(tf.shape(aww))
         if self.save_attention and training:
             aww = tf.stack(aw_list, axis=0)
             self.attention_weights.assign(aww)
@@ -187,7 +169,7 @@ class EncoderLayer(kr.layers.Layer):
 
         return out
 
-    def self_attention(self, batch_size, q, k, v, mask=None, softmax_type=1):
+    def self_attention(self, batch_size, q, k, v, softmax_type=1):
         """
         Calculates self attention:
         """
@@ -203,9 +185,6 @@ class EncoderLayer(kr.layers.Layer):
 
         dk = tf.cast(tf.shape(k)[-1], tf.float32)
         z = z / tf.math.sqrt(dk)
-
-        # if mask is not None:
-        #     z += (mask * -1e9)
 
         if softmax_type == 1:
             z = tf.reduce_sum(z, axis=[-1, -2])
@@ -238,7 +217,6 @@ class EncoderLayer(kr.layers.Layer):
         ve = tf.broadcast_to(v, (batch_size, v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]))
         se = tf.broadcast_to(se, (batch_size, v.shape[-3], v.shape[-3], v.shape[-2], v.shape[-1]))
 
-        # z = tf.matmul(se, v)
         z = tf.multiply(se, ve)
         z = tf.reduce_sum(z, axis=2)
 
@@ -259,6 +237,7 @@ class EncoderLayer(kr.layers.Layer):
     @classmethod
     def from_config(cls, config):
         return cls(**config)
+
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __init__(self,
@@ -295,160 +274,72 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         return cls(**config)
 
 
-def custom_loss_function(lambada):
-    def mse_loss_function(y_true, y_pred):
-        loss = tf.math.reduce_mean(tf.square(y_true - y_pred)) + lambada * tf.square(
-            tf.math.reduce_mean(y_true - y_pred))
-        return loss
-
-    return mse_loss_function
-
-
 def get_lr_metric(optimizer):
     def lr(y_true, y_pred):
         return optimizer._decayed_lr(tf.float32) # I use ._decayed_lr method instead of .lr
     return lr
 
-if __name__ == '__main__':
-    # Load dataset:
-    filename = 'dataset_tensor.npy'
-    file_path = os.path.join(common.paths.PROCESSED_DATASET_DIR, filename)
-    dataset = np.load(file_path, allow_pickle=True)
-    print(dataset.shape)
 
-    """
-    ###### ALL PARAMETERS HERE######:
-    """
+def main():
+    # Load USA+Canada dataset:
+    import experiment_tools.load_dataset as load_dataset
+    from common.variables import city_labels
 
-    softmax_type = 3
     input_length = 16
-    pred_time = 4
-    epoch = 200  # 100
+    prediction_time = 4
+    y_feature = 4
+    y_city = 0
+    num_cities = 30
+    remove_last_from_test = 800
+    valid_size = 1024
 
-    learning_rate = 0.0001
+    dataset, dataset_params = load_dataset.get_usa_dataset(common.paths.PROCESSED_DATASET_DIR,
+                                                           input_length, prediction_time,
+                                                           y_feature, y_city,
+                                                           end_city=num_cities,
+                                                           remove_last_from_test=remove_last_from_test,
+                                                           valid_split=valid_size, split_random=1337)
+
+    denorm_min, denorm_max = load_dataset.get_usa_normalization(common.paths.PROCESSED_DATASET_DIR, y_feature)
+
+    Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = dataset
+    print('Xtr.shape', Xtr.shape)
+    print('Ytr.shape', Ytr.shape)
+    print('Xvalid.shape', Xvalid.shape)
+    print('Yvalid.shape', Yvalid.shape)
+    print('Xtest.shape', Xtest.shape)
+    print('Ytest.shape', Ytest.shape)
+
+    print('denorm_min', denorm_min)
+    print('denorm_max', denorm_max)
+
+    # Create and train the TENT model
+    import experiment_tools.tt_training as tt_training
+    from visualization_tools.AW_save import save_weights
+    import datetime
+
+    save_aw = False  ## To store the attention weights set this variable to true
+    folder = datetime.datetime.now().strftime("%Y%m%d") + '_' + datetime.datetime.now().strftime("%H%M%S")
+
+    # model
+    softmax_type = 3
+    epoch = 300
+    patience = 20
+    num_layers = 3
     head_num = 32
-    d_model = 32
-    dense_units = 512
-    batch_size = 32
+    d_model = 256
+    dense_units = 128
+    batch_size = 16
+    loss = 'mse'
 
-    num_examples = 100 # 2 * batch_size
-    num_valid_examples = 1324 # 1 * batch_size
-    initializer = 'RandomNormal'
+    model, model_params, history = tt_training.train_model(dataset,
+                                                           softmax_type, epoch, patience,
+                                                           num_layers, head_num, d_model, dense_units,
+                                                           batch_size, loss, use_tpu=False, save_aw=save_aw)
+    if save_aw:
+        save_weights(model, city_labels, layer=1,
+                     folder_name=common.paths.WORKING_DIR + folder)
 
-    train, test = dataset_tools.split.split_train_test(dataset)
-    x_train, y_train = dataset_tools.split.get_xy(train, input_length=input_length, pred_time=pred_time)
-    x_test, y_test = dataset_tools.split.get_xy(test, input_length=input_length, pred_time=pred_time)
 
-    # x_train = x_train.astype('float32')
-    x_train = tf.reshape(x_train, (x_train.shape[0], x_train.shape[1], dataset.shape[1], dataset.shape[2]))
-    y_train = tf.reshape(y_train, (y_train.shape[0], dataset.shape[1], dataset.shape[2]))
-    x_test = tf.reshape(x_test, (x_test.shape[0], x_test.shape[1], dataset.shape[1], dataset.shape[2]))
-    y_test = tf.reshape(y_test, (y_test.shape[0], dataset.shape[1], dataset.shape[2]))
-
-    # Choosing first 30 cities
-    x_train = x_train[:, :, :30, :]
-    y_train = y_train[:, :30, :]
-    x_test = x_test[:, :, :30, :]
-    y_test = y_test[:, :30, :]
-
-    input_shape = (input_length, x_train.shape[-2], x_train.shape[-1])
-    output_shape = (1, 1)
-
-    # Choosing temperature as output
-    y_train = y_train[..., 0, 4]
-    y_test = y_test[..., 0, 4]
-
-    print(f'x_train.shape: {x_train.shape}')
-    print(f'x_test.shape: {x_test.shape}')
-
-    model = kr.Sequential([
-        kr.Input(shape=input_shape),
-        PositionalEncoding(),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        EncoderLayer(input_length, d_model, head_num, dense_units, initializer, softmax_type, batch_size),
-        kr.layers.Flatten(),
-        kr.layers.Dense(tf.reduce_prod(output_shape), activation='linear'),
-        kr.layers.Reshape(output_shape),
-    ])
-
-    model.summary()
-    model.compile(optimizer=kr.optimizers.Adam(learning_rate=learning_rate), loss='mse', metrics=['mae'])
-
-    x_valid = x_train[-num_examples - num_valid_examples:-num_examples, ...]
-    y_valid = y_train[-num_examples - num_valid_examples:-num_examples]
-    print(f'x_valid.shape: {x_valid.shape}')
-
-    x_train = x_train[-num_examples:]
-    y_train = y_train[-num_examples:]
-
-    # Callbacks
-    print_attention_weights = kr.callbacks.LambdaCallback(
-        on_train_end=lambda batch: print(model.layers[1].attention_weights))
-    early_stopping = kr.callbacks.EarlyStopping(patience=2,
-                                                restore_best_weights=True,
-                                                verbose=1)
-
-    history = model.fit(
-        x_train, y_train,
-        epochs=epoch,
-        batch_size=batch_size,
-        validation_data=(x_valid, y_valid),
-        callbacks=[early_stopping]
-    )
-
-    labels = np.arange(model.layers[1].attention_weights.shape[-2]).tolist()
-
-    if (softmax_type == 1 or softmax_type == 2):
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[1][0], (input_length, -1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[2][0], (input_length, -1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[3][0], (input_length, -1)), labels)
-        attention_plotter(tf.reshape(model.layers[1].attention_weights[4][0], (input_length, -1)), labels)
-
-    elif softmax_type == 3:
-        from common.variables import city_labels
-        # attention_3d_plotter(model.layers[1].attention_weights[0][3].numpy(), city_labels[:29])
-        # loop_plotter(tf.reshape(model.layers[1].attention_weights[0])
-        print(tf.shape(model.layers[1].attention_weights))
-        loop_plotter(model.layers[1].attention_weights)
-
-    else:
-        pass
-
-    preds = []
-    for i in range(x_valid.shape[0]):
-        if (i + 1) % 100 == 0:
-            print(f'prediction: {i + 1}/{x_valid.shape[0]}')
-        preds.append(model.predict(x_valid[i][np.newaxis, ...]))
-    pred = np.concatenate(preds, axis=0)
-    mse = np.mean(kr.metrics.mse(y_valid, pred))
-    mae = np.mean(kr.metrics.mae(y_valid, pred))
-    print(f'mse: {mse}, mae: {mae}')
-
-    plt.figure(figsize=(14, 8))
-    plt.plot(range(pred.size), pred.flatten(), label='pred')
-    plt.plot(range(len(y_valid)), y_valid, label='true')
-    plt.legend()
-    plt.show()
-
-    print("\n\n######################## Model description ################################")
-    model.summary()
-    print("softmax_type = ", softmax_type)
-    print("Input_length = ", input_length)
-    print("Lag = ", pred_time)
-    print("Epoch = ", epoch)
-
-    print("LR = ", learning_rate)
-    print("Head_num = ", head_num)
-    print("d_model = ", d_model)
-    print("dense_units = ", dense_units)
-    print("batch_size = ", batch_size)
-
-    print("num_examples = ", num_examples)
-    print("num_valid_examples = ", num_valid_examples)
-    print("input_shape = ", input_shape)
-
-    pred = model.predict(x_test)
-    mae = kr.metrics.mae(y_test.numpy().flatten(), pred.flatten())
-    print("\n\n######################## Results ##########################################")
-    print(f'test mae: {np.mean(mae)}')
+if __name__ == '__main__':
+    main()

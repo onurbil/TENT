@@ -5,6 +5,12 @@ import tensorflow as tf
 import tensorflow.keras as kr
 
 
+"""
+Based on: A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser, and I. Polosukhin, 
+'Attention is all you need' 
+in Advances in neural information processing systems, 2017, pp. 5998–6008.
+"""
+
 def get_angles(pos, i, d_model):
     angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(d_model))
     return pos * angle_rates
