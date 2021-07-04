@@ -5,7 +5,9 @@ Official implementation code of the paper: "TENT: Tensorized Encoder Transformer
 ![TENT](TENT_visualization_short_dim.png)
 
 ## Usage
-1. Execute `TT_All_models_experiments.ipynb`.
+1. Install the required packages with `pip install -r requirements.txt`.
+
+2. Execute the notebook `TT_All_models_experiments.ipynb`.
 
 ## Citation
 ```
