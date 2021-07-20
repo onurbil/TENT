@@ -2,6 +2,7 @@
 Official implementation code of the paper: "TENT: Tensorized Encoder Transformer for temperature forecasting" [(ArXiv link)](https://arxiv.org/abs/2106.14742).
 
 
+
 ![TENT](TENT_visualization_short_dim.png)
 
 ## Usage
