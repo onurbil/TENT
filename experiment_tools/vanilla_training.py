@@ -1,13 +1,25 @@
 import tensorflow.keras as kr
+import tensorflow as tf
 
 import experiment_tools.load_dataset as experiment_dataset
 import vanilla_transformer.transformer as vt
 from keras.callbacks import History
 
+def initialize_tpu():
+    tpu = tf.distribute.cluster_resolver.TPUClusterResolver()
+    print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'])
+    tf.config.experimental_connect_to_cluster(tpu)
+    tf.tpu.experimental.initialize_tpu_system(tpu)
+    strategy = tf.distribute.TPUStrategy(tpu)  # tf.distribute.experimental.TPUStrategy(tpu)
+    print("REPLICAS: ", strategy.num_replicas_in_sync)
+    return strategy
 
 def train_model(dataset, epoch=300, patience=20,
                 num_layers=3, head_num=32, d_model=512, dense_units=512,
-                batch_size=128, dropout_rate=0.01, loss=kr.losses.mean_squared_error):
+                batch_size=128, dropout_rate=0.01, loss=kr.losses.mean_squared_error, use_tpu=False):
+
+    if use_tpu:
+        strategy = initialize_tpu()
     
     Xtr, Ytr, Xvalid, Yvalid, Xtest, Ytest = dataset
     Xtr_flat, Xtest_flat, Xvalid_flat = experiment_dataset.to_flatten_dataset(Xtr, Xtest, Xvalid)
@@ -29,9 +41,15 @@ def train_model(dataset, epoch=300, patience=20,
     learning_rate = vt.CustomSchedule(d_model)
     optimizer = kr.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
 
-    model = vt.Transformer(input_size, num_layers, d_model, head_num, dense_units, input_length, output_size,
+    if use_tpu:
+        with strategy.scope():
+            model = vt.Transformer(input_size, num_layers, d_model, head_num, dense_units, input_length, output_size,
                            rate=dropout_rate)
-    model.compile()
+            model.compile()
+    else:
+        model = vt.Transformer(input_size, num_layers, d_model, head_num, dense_units, input_length, output_size,
+                               rate=dropout_rate)
+        model.compile()
 
     early_stopping = kr.callbacks.EarlyStopping(monitor='val_loss',
                                                 patience=patience,
