@@ -15,7 +15,7 @@ def initialize_tpu():
     return strategy
 
 def train_model(dataset, epoch=300, patience=20,
-                num_layers=2, hidden_units=128, dropout_rate=0.1, embedding_size=None,
+                num_layers=2, hidden_units=128, dropout_rate=0.1,
                 learning_rate=1e-4,
                 batch_size=128, loss=kr.losses.mean_squared_error, use_tpu=False):
 
@@ -45,13 +45,13 @@ def train_model(dataset, epoch=300, patience=20,
 
     if use_tpu:
         with strategy.scope():
-            model = lstm.create_lstm(input_length, input_size, output_size, num_layers, hidden_units, dropout_rate, embedding_size)
+            model = lstm.create_lstm(input_length, input_size, output_size, num_layers, hidden_units, dropout_rate)
             model.compile(optimizer,
                           loss=loss,
                           metrics=['mse', 'mae'],
                           )
     else:
-        model = lstm.create_lstm(input_length, input_size, output_size, num_layers, hidden_units, dropout_rate, embedding_size)
+        model = lstm.create_lstm(input_length, input_size, output_size, num_layers, hidden_units, dropout_rate)
         model.compile(optimizer,
                       loss=loss,
                       metrics=['mse', 'mae'],
@@ -78,7 +78,6 @@ def train_model(dataset, epoch=300, patience=20,
         ('stopped_epoch', early_stopping.stopped_epoch),
         ('num_layers', num_layers),
         ('hidden_units', hidden_units),
-        ('embedding_size', embedding_size),
         ('batch_size', batch_size),
         ('dropout_rate', dropout_rate),
         ('loss', loss),
