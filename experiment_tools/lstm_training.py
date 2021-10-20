@@ -126,7 +126,7 @@ def train_conv_lstm(dataset, epoch=300, patience=20,
         with strategy.scope():
             model = lstm.create_conv_lstm(input_length, input_size, output_size, num_layers,
                                           filters, kernel_size,
-                                          dropout_rate)
+                                          dropout_rate, padding)
             model.compile(optimizer,
                           loss=loss,
                           metrics=['mse', 'mae'],
@@ -134,7 +134,7 @@ def train_conv_lstm(dataset, epoch=300, patience=20,
     else:
         model = lstm.create_conv_lstm(input_length, input_size, output_size, num_layers,
                                       filters, kernel_size,
-                                      dropout_rate)
+                                      dropout_rate, padding)
         model.compile(optimizer,
                       loss=loss,
                       metrics=['mse', 'mae'],
@@ -160,7 +160,9 @@ def train_conv_lstm(dataset, epoch=300, patience=20,
         ('patience', patience),
         ('stopped_epoch', early_stopping.stopped_epoch),
         ('num_layers', num_layers),
-        ('hidden_units', hidden_units),
+        ('filters', filters),
+        ('kernel_size', kernel_size),
+        ('padding', padding),
         ('batch_size', batch_size),
         ('dropout_rate', dropout_rate),
         ('loss', loss),
