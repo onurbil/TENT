@@ -94,7 +94,7 @@ def transform_dataset_for_conv_lstm(Xtr, Xvalid, Xtest):
 
 
 def train_conv_lstm(dataset, epoch=300, patience=20,
-                    num_layers=2, hidden_units=128,
+                    num_layers=2,
                     filters=8, kernel_size=3,
                     dropout_rate=0.1, padding='same',
                     learning_rate=1e-4,
