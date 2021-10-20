@@ -18,7 +18,7 @@ def create_lstm(sequence_length, input_size, output_size, num_layers, hidden_uni
 
 
 def create_conv_lstm(sequence_length, input_size, output_size, num_layers, filters, kernel_size, dropout_rate,
-                     padding = 'same', data_format='channels_first'):
+                     padding='same', data_format='channels_first'):
     strides = (1, 1)
 
     model = kr.Sequential()
