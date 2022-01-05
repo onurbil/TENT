@@ -4,6 +4,7 @@ import tensorflow.keras as kr
 import numpy as np
 import matplotlib.pyplot as plt
 import dataset_tools.denormalization as denorm
+import pickle
 
 
 def plot_predictions(Ys, pred, folder, name, ending):
@@ -20,8 +21,13 @@ def plot_predictions(Ys, pred, folder, name, ending):
     print(f'Figure mae: {np.mean(mae)}')
     print(f'Figure mse: {np.mean(mse)}')
 
-    plot_width = 20 if Ys.size < 1000 else 100
+    plot_width = 80 if Ys.size < 1000 else 100
     plt.figure(figsize=(plot_width, 8))
+    # NEW!
+    plt.style.use('seaborn-darkgrid')
+    my_dpi = 96
+    plt.figure(figsize=(1200 / my_dpi, 480 / my_dpi), dpi=my_dpi)
+
     plt.plot(range(pred.size), pred, label='pred')
     plt.plot(range(len(Ys)), Ys, label='true')
     plt.legend()
@@ -77,7 +83,7 @@ def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, folder, bas
         pred = model.predict(Xvalid)
         if model_returns_activations:
             pred = pred[0]
-    valid_mae, valid_mse = plot_predictions(Yvalid, pred, folder, base_name, '_valid.png')
+    valid_mae, valid_mse = plot_predictions(Yvalid, pred, folder, base_name, '_valid_improved.png')
 
     if pred_test is not None:
         pred = pred_test
@@ -85,12 +91,26 @@ def plot_valid_test_predictions(model, Xvalid, Yvalid, Xtest, Ytest, folder, bas
         pred = model.predict(Xtest)
         if model_returns_activations:
             pred = pred[0]
-    test_mae, test_mse = plot_predictions(Ytest, pred, folder, base_name, '_test.png')
+    test_mae, test_mse = plot_predictions(Ytest, pred, folder, base_name, '_test_improved.png')
 
     pred_denorm = denorm.denormalize_feature(pred, y_feature, denorm_min, denorm_max)
     Ytest_denorm = denorm.denormalize_feature(Ytest, y_feature, denorm_min, denorm_max)
-    test_denorm_mae, test_denorm_mse \
-        = plot_predictions(Ytest_denorm, pred_denorm, folder, base_name, '_denormalized.png')
+    test_denorm_mae, test_denorm_mse = plot_predictions(Ytest_denorm, pred_denorm, folder, base_name, '_denormalized_improved.png')
+
+    fileName = os.path.join(folder, base_name + '_values.txt')
+    print(fileName)
+    saving_values = []
+    saving_values.append(pred_denorm)
+    saving_values.append(Ytest_denorm)
+    saving_values.append(folder)
+    saving_values.append(base_name)
+    saving_values.append('_denormalized_improved.png')
+    saving_values.append(test_denorm_mae)
+    saving_values.append(test_denorm_mse)
+
+    with open(fileName, 'wb') as fp:
+      pickle.dump(saving_values, fp)
+
     return valid_mae, valid_mse, test_mae, test_mse, test_denorm_mae, test_denorm_mse
 
 
