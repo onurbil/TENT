@@ -10,6 +10,11 @@ Official implementation code of the paper: "TENT: Tensorized Encoder Transformer
 
 2. Execute the notebook `TT_All_models_experiments.ipynb`.
 
+
+## Data
+Download the required datasets from [here](https://surfdrive.surf.nl/files/index.php/s/LemhAC362d8FU5s).
+
+
 ## Citation
 ```
 @article{bilgin2021tent,
