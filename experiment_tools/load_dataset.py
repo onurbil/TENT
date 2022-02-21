@@ -69,27 +69,27 @@ def get_usa_dataset(data_path, input_length, prediction_time,
                     y_feature, y_city, start_city=0, end_city=None,
                     remove_last_from_test=None, valid_split=None, split_random=None):
     test_size = 69 * 128
-    return get_tensor_dataset(data_path, 'dataset_tensor.npy', test_size,
+    return get_tensor_dataset(data_path, 'usa-canada_dataset_tensor.npy', test_size,
                               input_length, prediction_time,
                               y_feature, y_city, start_city, end_city,
                               remove_last_from_test, valid_split, split_random)
 
 
 def get_usa_normalization(data_path, y_feature):
-    return get_dataset_normalization(data_path, file_name='scale.npy', y_feature=y_feature)
+    return get_dataset_normalization(data_path, file_name='usa-canada_dataset_tensor.npy', y_feature=y_feature)
 
 
 def get_eu_dataset(data_path, test_size, input_length, prediction_time,
                    y_feature, y_city, start_city=0, end_city=None,
                    remove_last_from_test=None, valid_split=None, split_random=None):
-    return get_tensor_dataset(data_path, 'eu_dataset_tensor.npy', test_size,
+    return get_tensor_dataset(data_path, 'europe_dataset_tensor.npy', test_size,
                               input_length, prediction_time,
                               y_feature, y_city, start_city, end_city,
                               remove_last_from_test, valid_split, split_random)
 
 
 def get_eu_normalization(data_path, y_feature):
-    return get_dataset_normalization(data_path, file_name='eu_scale.npy', y_feature=y_feature)
+    return get_dataset_normalization(data_path, file_name='europe_scale.npy', y_feature=y_feature)
 
 
 def prepare_xy(x, y, city_feature_shape, start_city, end_city, y_city, y_feature):
