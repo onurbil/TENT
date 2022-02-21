@@ -76,7 +76,7 @@ def get_usa_dataset(data_path, input_length, prediction_time,
 
 
 def get_usa_normalization(data_path, y_feature):
-    return get_dataset_normalization(data_path, file_name='usa-canada_dataset_tensor.npy', y_feature=y_feature)
+    return get_dataset_normalization(data_path, file_name='usa-canada_scale.npy', y_feature=y_feature)
 
 
 def get_eu_dataset(data_path, test_size, input_length, prediction_time,
