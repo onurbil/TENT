@@ -16,7 +16,7 @@ The comparison between the predictions of TENT model and the real measurements f
 Attention visualization for Vancouver in USA and Canada dataset. The circular graphs shows which city each of the most important heads attends to. The thickness of the line represents the amount of attention each of the heads is paying to the cities. The size of the circles indicates the importance of each city in the temperature prediction for the target city. The target city is marked as a red circle and its size corresponds to the importance of the attention to itself.
 
 ## Model architecture
-![TENT](TENT_visualization_short_dim.png)
+![TENT](model_arch.png)
 
 ## Data
 
