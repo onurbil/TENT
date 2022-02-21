@@ -20,7 +20,7 @@ Attention visualization for Vancouver in USA and Canada dataset. The circular gr
 
 ## Data
 
-In order to download the data or any of the trained models, please email to the following addresses:
+In order to download the data, please email to the following addresses:
 
 o.bilgin@student.maastrichtuniversity.nl
 
@@ -37,6 +37,7 @@ siamak.mehrkanoon@maastrichtuniversity.nl
 2. Execute the notebook `TT_All_models_experiments.ipynb`.
 
 ## Citation
+If you use our data and code, please cite the paper using the following bibtex reference:
 ```
 @article{bilgin2021tent,
   title={TENT: Tensorized Encoder Transformer for Temperature Forecasting},
