@@ -19,9 +19,11 @@ Attention visualization for Vancouver in USA-Canada dataset.
 ![TENT](images/model_arch.png)
 
  - Tensorial self-attention 
+
 ![TENT](images/tensorial_self_attention.jpeg)
 
 - Tensorial multi-head attention
+
 ![TENT](images/tensorial_multihead_attention.jpeg)
 
 ## Data
