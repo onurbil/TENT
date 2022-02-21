@@ -1,13 +1,13 @@
-The 'dataset_tensor.npy' has shape of (45253,36,9) as (time, cities, measurement).
+The 'usa-canada_dataset_tensor.npy' has shape of (45253,36,9) as (time, cities, measurement).
 
 
-The first and last dates in 'dataset_tensor.npy':
+The first and last dates in 'usa-canada_dataset_tensor.npy':
 0:              2012-10-01 12:00:00
 45252:      2017-11-30 00:00:00
 (First test data: 2017-11-30)
 
 
-The order of measurements in 'dataset_tensor.npy' and the minimum, maximum values:
+The order of measurements in 'usa-canada_dataset_tensor.npy' and the minimum, maximum values:
 
 0:  day of the year        (min: 1,        max: 366)
 1:  hour of the day        (min: 0,        max: 23)
@@ -21,7 +21,7 @@ The order of measurements in 'dataset_tensor.npy' and the minimum, maximum value
 9:  y coordinate of cities
 10:  z coordinate of cities
 
-The order of cities in 'dataset_tensor.npy':
+The order of cities in 'usa-canada_dataset_tensor.npy':
 
 0:  Vancouver
 1:  Portland
@@ -63,17 +63,17 @@ The order of cities in 'dataset_tensor.npy':
 
 -----------------------------------------------------------------------------
 
-The 'eu_dataset_tensor.npy' has shape of (5470,18, 19) as (time, cities, measurement).
+The 'europe_dataset_tensor.npy' has shape of (5470,18, 19) as (time, cities, measurement).
 
 
 
-The first and last dates in 'eu_dataset_tensor.npy':
+The first and last dates in 'europe_dataset_tensor.npy':
 0:           2005-05-04
 5469:     2020-04-24
 (First test data: 2017-04-24)
 
 
-The order of measurements in 'eu_dataset_tensor.npy' and the minimum, maximum values:
+The order of measurements in 'europe_dataset_tensor.npy' and the minimum, maximum values:
 
 0:    day of the year               min: 1          max: 366
 1     high_temp(F)                  min: 10.0       max: 189.0
@@ -97,7 +97,7 @@ The order of measurements in 'eu_dataset_tensor.npy' and the minimum, maximum va
 
 
 
-The order of cities in 'eu_dataset_tensor.npy':
+The order of cities in 'europe_dataset_tensor.npy':
 
 0: Amsterdam
 1: Barcelona
