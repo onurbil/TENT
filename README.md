@@ -9,7 +9,7 @@ Official implementation code of the paper: "TENT: Tensorized Encoder Transformer
 ## Results
 
 ![TENT](images/result_USA.png)
-The obtained test MAE of the models for the USA and Canada dataset averaged over cities (left) and prediction time steps (right).
+The obtained test MAE of the models for USA-Canada dataset averaged over cities (a) and prediction time steps (b).
 
 ![TENT](images/result_vancouver.png)
 The comparison between the predictions of TENT model and the real measurements for hourly temperature of the test set of Vancouver.
