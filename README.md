@@ -2,9 +2,9 @@
 Official implementation code of the paper: "TENT: Tensorized Encoder Transformer for temperature forecasting" [(ArXiv link)](https://arxiv.org/abs/2106.14742).
 
 ## Model architecture
-![TENT](images/all_together.jpeg)
+![TENT](images/all_together.jpg)
 
-Tensorial self-attention (left)               Tensorial multi-head attention (right)
+(a) Model architectureTensorial. (b) Tensorial self-attention. (c) Tensorial multi-head attention.
 
 ## Results
 
