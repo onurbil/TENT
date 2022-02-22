@@ -1,6 +1,10 @@
 ## TENT
 Official implementation code of the paper: "TENT: Tensorized Encoder Transformer for temperature forecasting" [(ArXiv link)](https://arxiv.org/abs/2106.14742).
 
+## Model architecture
+![TENT](images/all_together.jpeg)
+
+Tensorial self-attention (left)               Tensorial multi-head attention (right)
 
 ## Results
 
@@ -14,17 +18,6 @@ The comparison between the predictions of TENT model and the real measurements f
 
 ![TENT](images/vancouver_maps.png)
 Attention visualization for Vancouver in USA-Canada dataset.
-
-## Model architecture
-![TENT](images/model_arch.png)
-
- - Tensorial self-attention 
-
-![TENT](images/tensorial_self_attention.jpeg)
-
-- Tensorial multi-head attention
-
-![TENT](images/tensorial_multihead_attention.jpeg)
 
 ## Data
 
