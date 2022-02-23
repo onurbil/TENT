@@ -21,7 +21,7 @@ Attention visualization for Vancouver in USA-Canada dataset.
 
 ## Data
 
-In order to download the data, please email to the following addresses:
+In order to download the data, please email to the following address:
 
 siamak.mehrkanoon@maastrichtuniversity.nl
 
