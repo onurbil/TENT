@@ -35,7 +35,7 @@ If you use our data and code, please cite the paper using the following bibtex r
 @article{bilgin2021tent,
   title={TENT: Tensorized Encoder Transformer for Temperature Forecasting},
   author={Bilgin, Onur and M{\k{a}}ka, Pawe{\l} and Vergutz, Thomas and Mehrkanoon, Siamak},
-  journal={arXiv preprint arXiv:2106.14742},
+  journal={arXiv preprint arXiv:2106.14742v2},
   year={2021}
 }
 ```
