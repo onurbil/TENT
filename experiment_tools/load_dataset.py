@@ -88,6 +88,24 @@ def get_eu_dataset(data_path, test_size, input_length, prediction_time,
                               remove_last_from_test, valid_split, split_random)
 
 
+def get_eu_averaged_dataset(data_path, test_size, input_length, prediction_time,
+                            y_feature, y_city, start_city=0, end_city=None,
+                            remove_last_from_test=None, valid_split=None, split_random=None):
+    return get_tensor_dataset(data_path, 'europe_averaged_dataset_tensor.npy', test_size,
+                              input_length, prediction_time,
+                              y_feature, y_city, start_city, end_city,
+                              remove_last_from_test, valid_split, split_random)
+
+
+def get_eu_upsampled_dataset(data_path, test_size, input_length, prediction_time,
+                             y_feature, y_city, start_city=0, end_city=None,
+                             remove_last_from_test=None, valid_split=None, split_random=None):
+    return get_tensor_dataset(data_path, 'europe_upsampled_dataset_tensor.npy', test_size,
+                              input_length, prediction_time,
+                              y_feature, y_city, start_city, end_city,
+                              remove_last_from_test, valid_split, split_random)
+
+
 def get_eu_normalization(data_path, y_feature):
     return get_dataset_normalization(data_path, file_name='europe_scale.npy', y_feature=y_feature)
 
