@@ -50,7 +50,10 @@ def save_results(parameters, model, folder, name):
         print("\n######################### Model Run ##########################################", file=f)
         history = model.history.history
         keys = model.history.history.keys()
-        size = len(history['loss'])
+        try:
+          size = len(history['loss'])
+        except:
+          size = 0
         print(f'Number of epochs: {size}', file=f)
         for ii in range(size):
             for i in keys:
