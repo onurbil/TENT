@@ -148,7 +148,7 @@ class EncoderLayer(kr.layers.Layer):
             aw_list.append(aw)
 
         z = tf.concat(zs, axis=-1)
-        if self.save_attention and training:
+        if self.save_attention and not training:
             aww = tf.stack(aw_list, axis=0)
             self.attention_weights.assign(aww)
 
