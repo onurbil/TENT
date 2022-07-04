@@ -17,7 +17,7 @@ The comparison between the predictions of TENT model and the real measurements f
 ## Attention visualization
 
 ![TENT](images/vancouver_maps.png)
-Attention visualization for Vancouver in USA-Canada dataset.
+Attention visualization for Dallas in USA-Canada dataset.
 
 ## Data
 
