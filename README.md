@@ -23,7 +23,7 @@ Attention visualization for Dallas in USA-Canada dataset.
 
 In order to download the data, please email to the following address:
 
-siamak.mehrkanoon@maastrichtuniversity.nl
+s.mehrkanoon@uu.nl
 
 
 ## Usage
